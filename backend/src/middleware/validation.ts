@@ -40,7 +40,15 @@ export const validate = (
       }
 
       // Replace request data with validated and sanitized data
-      req[target] = value;
+      if (target === 'body') {
+        req.body = value;
+      } else if (target === 'query') {
+        // req.query is read-only in Express 5, so modify in place
+        Object.keys(req.query).forEach(key => delete (req.query as Record<string, unknown>)[key]);
+        Object.assign(req.query, value);
+      } else if (target === 'params') {
+        Object.assign(req.params, value);
+      }
 
       next();
     } catch (err) {
