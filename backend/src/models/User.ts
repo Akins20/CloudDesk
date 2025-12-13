@@ -38,7 +38,6 @@ const userSchema = new Schema<IUserDocument>(
     password: {
       type: String,
       required: [true, 'Password is required'],
-      minlength: [60, 'Password hash should be at least 60 characters'],
       select: false, // Don't include password by default in queries
     },
     firstName: {
