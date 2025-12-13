@@ -14,6 +14,13 @@ const router = Router();
 router.use(authenticate);
 
 /**
+ * @route   GET /api/sessions
+ * @desc    Get all sessions (alias for active)
+ * @access  Private
+ */
+router.get('/', sessionController.getActiveSessions);
+
+/**
  * @route   POST /api/sessions/connect
  * @desc    Connect to an instance (create session)
  * @access  Private
