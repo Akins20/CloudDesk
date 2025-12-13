@@ -13,6 +13,7 @@ import {
   Lock,
   Wifi,
   WifiOff,
+  Plug,
 } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
@@ -29,9 +30,23 @@ interface InstanceCardProps {
 
 export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
   const router = useRouter();
-  const { deleteInstance, isDeleting } = useInstanceStore();
+  const { deleteInstance, isDeleting, testConnection, isTesting } = useInstanceStore();
   const { activeSessions } = useSessionStore();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const handleTestConnection = async () => {
+    try {
+      const result = await testConnection(instance.id);
+      if (result.success) {
+        toast.success('SSH connection successful!');
+      } else {
+        toast.error(result.message || 'Connection failed');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Connection test failed';
+      toast.error(message);
+    }
+  };
 
   const activeSession = activeSessions.find(
     (s) => typeof s.instanceId === 'string'
@@ -85,8 +100,24 @@ export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 mt-1 w-40 origin-top-right rounded-lg bg-card border border-border shadow-lg focus:outline-none overflow-hidden z-10">
+              <Menu.Items className="absolute right-0 mt-1 w-48 origin-top-right rounded-lg bg-card border border-border shadow-lg focus:outline-none overflow-hidden z-10">
                 <div className="p-1">
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={handleTestConnection}
+                        disabled={isTesting}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors',
+                          active ? 'bg-muted text-foreground' : 'text-muted-foreground',
+                          isTesting && 'opacity-50 cursor-not-allowed'
+                        )}
+                      >
+                        <Plug className="w-4 h-4" />
+                        {isTesting ? 'Testing...' : 'Test Connection'}
+                      </button>
+                    )}
+                  </Menu.Item>
                   <Menu.Item>
                     {({ active }) => (
                       <button
@@ -178,7 +209,6 @@ export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
               size="sm"
               leftIcon={<Play className="w-4 h-4" />}
               onClick={handleConnect}
-              disabled={!instance.isVncInstalled}
             >
               Connect
             </Button>
