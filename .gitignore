@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+*.key
 
 # debug
 npm-debug.log*
@@ -30,8 +31,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files
+.env
+.env.local
+.env.production
+.env*.local
 
 # vercel
 .vercel
@@ -39,3 +43,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Sensitive files
+*credentials*
+*Credentials*
+*.zip
+
+# Internal docs
+*.docx
+
+# Backend specific
+backend/node_modules/
+backend/dist/
+backend/logs/
+backend/.env
+backend/.env.production
+backend/*.pem

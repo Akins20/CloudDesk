@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+
+# Build output (we build in Docker)
+dist
+
+# Development files
+*.log
+npm-debug.log*
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Test files
+coverage
+*.test.ts
+*.spec.ts
+__tests__
+
+# Documentation
+*.md
+!README.md
+
+# Credentials (should be in .env, not files)
+*.pem
+*credentials*
+*.txt
+
+# Docker files (not needed in image)
+Dockerfile*
+docker-compose*
+.dockerignore

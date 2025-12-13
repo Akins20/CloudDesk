@@ -1,26 +1,236 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* CloudDesk Monochrome Color System */
+  --clouddesk-black: #000000;
+  --clouddesk-dark: #0a0a0a;
+  --clouddesk-darker: #1a1a1a;
+  --clouddesk-gray-900: #2d2d2d;
+  --clouddesk-gray-800: #3a3a3a;
+  --clouddesk-gray-700: #4a4a4a;
+  --clouddesk-gray-600: #5a5a5a;
+  --clouddesk-gray-500: #6b6b6b;
+  --clouddesk-gray-400: #9ca3af;
+  --clouddesk-gray-300: #d1d5db;
+  --clouddesk-gray-200: #e5e7eb;
+  --clouddesk-gray-100: #f3f4f6;
+  --clouddesk-white: #ffffff;
+
+  /* Status Colors (only for indicators) */
+  --status-success: #10b981;
+  --status-error: #ef4444;
+  --status-warning: #f59e0b;
+  --status-info: #3b82f6;
+
+  /* Background and foreground */
+  --background: var(--clouddesk-black);
+  --foreground: var(--clouddesk-white);
+
+  /* Glass effects */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-bg-hover: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-hover: rgba(255, 255, 255, 0.2);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* CloudDesk colors for Tailwind */
+  --color-clouddesk-black: var(--clouddesk-black);
+  --color-clouddesk-dark: var(--clouddesk-dark);
+  --color-clouddesk-darker: var(--clouddesk-darker);
+  --color-gray-900: var(--clouddesk-gray-900);
+  --color-gray-800: var(--clouddesk-gray-800);
+  --color-gray-700: var(--clouddesk-gray-700);
+  --color-gray-600: var(--clouddesk-gray-600);
+  --color-gray-500: var(--clouddesk-gray-500);
+  --color-gray-400: var(--clouddesk-gray-400);
+  --color-gray-300: var(--clouddesk-gray-300);
+  --color-gray-200: var(--clouddesk-gray-200);
+  --color-gray-100: var(--clouddesk-gray-100);
+  --color-clouddesk-white: var(--clouddesk-white);
+
+  /* Status colors */
+  --color-status-success: var(--status-success);
+  --color-status-error: var(--status-error);
+  --color-status-warning: var(--status-warning);
+  --color-status-info: var(--status-info);
+
+  /* Glass effects */
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Base styles */
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Code/monospace */
+code, pre, .font-mono {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--clouddesk-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--clouddesk-gray-700);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--clouddesk-gray-600);
+}
+
+/* Selection */
+::selection {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--clouddesk-white);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Link reset */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Utility classes for glass effects */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-hover:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+}
+
+/* Gradient backgrounds */
+.bg-gradient-dark {
+  background: linear-gradient(135deg, var(--clouddesk-black) 0%, var(--clouddesk-dark) 100%);
+}
+
+.bg-gradient-glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Status badge colors */
+.status-success {
+  color: var(--status-success);
+}
+
+.status-error {
+  color: var(--status-error);
+}
+
+.status-warning {
+  color: var(--status-warning);
+}
+
+.status-info {
+  color: var(--status-info);
+}
+
+.bg-status-success {
+  background-color: var(--status-success);
+}
+
+.bg-status-error {
+  background-color: var(--status-error);
+}
+
+.bg-status-warning {
+  background-color: var(--status-warning);
+}
+
+.bg-status-info {
+  background-color: var(--status-info);
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
 }
