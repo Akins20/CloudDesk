@@ -52,9 +52,11 @@ export function SessionList() {
     };
   };
 
-  if (isLoading && sessions.length === 0) {
+  if (isLoading && (!sessions || sessions.length === 0)) {
     return <PageLoader message="Loading sessions..." />;
   }
+
+  const sessionList = sessions || [];
 
   return (
     <Card>
@@ -62,7 +64,7 @@ export function SessionList() {
         <CardTitle>Session History</CardTitle>
       </CardHeader>
       <CardContent>
-        {sessions.length === 0 ? (
+        {sessionList.length === 0 ? (
           <EmptyState
             icon={<Activity className="w-8 h-8" />}
             title="No sessions yet"
@@ -97,7 +99,7 @@ export function SessionList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sessions.map((session) => {
+                  {sessionList.map((session) => {
                     const instanceInfo = getInstanceInfo(session);
                     return (
                       <tr

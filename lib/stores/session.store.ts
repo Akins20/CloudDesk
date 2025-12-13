@@ -81,15 +81,20 @@ export const useSessionStore = create<SessionStore>()((set, get) => ({
   fetchSessions: async (query?: PaginationQuery) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await sessionService.getSessions(query);
+      const sessions = await sessionService.getSessions(query);
       set({
-        sessions: response.data,
-        pagination: response.pagination,
+        sessions,
+        pagination: {
+          page: 1,
+          limit: query?.limit || 10,
+          total: sessions.length,
+          totalPages: 1,
+        },
         isLoading: false,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch sessions';
-      set({ error: message, isLoading: false });
+      set({ error: message, isLoading: false, sessions: [] });
       throw error;
     }
   },
@@ -101,8 +106,7 @@ export const useSessionStore = create<SessionStore>()((set, get) => ({
       set({ activeSessions: sessions, isLoading: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch active sessions';
-      set({ error: message, isLoading: false });
-      throw error;
+      set({ error: message, isLoading: false, activeSessions: [] });
     }
   },
 

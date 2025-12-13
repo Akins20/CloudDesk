@@ -11,9 +11,9 @@ import type {
 } from '@/lib/types';
 
 export const sessionService = {
-  async getSessions(query?: PaginationQuery): Promise<PaginatedResponse<Session>> {
+  async getSessions(query?: PaginationQuery): Promise<Session[]> {
     const queryString = query ? buildQueryString(query) : '';
-    const response = await api.get<PaginatedResponse<Session>>(
+    const response = await api.get<Session[]>(
       `${API_ENDPOINTS.SESSIONS.BASE}${queryString}`
     );
     if (response.success && response.data) {
@@ -54,7 +54,7 @@ export const sessionService = {
   },
 
   async getActiveSessions(): Promise<Session[]> {
-    const response = await this.getSessions({ limit: 100 });
-    return response.data.filter((session) => session.isActive);
+    const sessions = await this.getSessions({ limit: 100 });
+    return sessions.filter((session) => session.status === 'connected' || session.status === 'connecting');
   },
 };
