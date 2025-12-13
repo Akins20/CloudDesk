@@ -13,13 +13,16 @@ import type {
 export const instanceService = {
   async getInstances(query?: InstanceQuery): Promise<PaginatedResponse<Instance>> {
     const queryString = query ? buildQueryString(query) : '';
-    const response = await api.get<PaginatedResponse<Instance>>(
+    // The API returns { success, data: Instance[], pagination } directly
+    const response = await api.get<Instance[]>(
       `${API_ENDPOINTS.INSTANCES.BASE}${queryString}`
     );
-    if (response.success && response.data) {
-      return response.data;
+    // The response IS the PaginatedResponse (success, data, pagination at same level)
+    const paginatedResponse = response as unknown as PaginatedResponse<Instance>;
+    if (paginatedResponse.success && paginatedResponse.data) {
+      return paginatedResponse;
     }
-    throw new Error(response.error?.message || 'Failed to fetch instances');
+    throw new Error((response as unknown as { error?: { message: string } }).error?.message || 'Failed to fetch instances');
   },
 
   async getInstance(id: string): Promise<Instance> {

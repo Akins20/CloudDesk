@@ -18,7 +18,8 @@ export default function DashboardPage() {
     fetchActiveSessions();
   }, [fetchInstances, fetchStats, fetchActiveSessions]);
 
-  const activeInstanceCount = instances.filter((i) => i.status === 'active').length;
+  const instanceList = instances || [];
+  const activeInstanceCount = instanceList.filter((i) => i.status === 'active').length;
 
   return (
     <DashboardLayout>
@@ -35,7 +36,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Instances"
-            value={instances.length}
+            value={instanceList.length}
             icon={<Server className="w-5 h-5 text-foreground" />}
           />
           <StatsCard
@@ -45,7 +46,7 @@ export default function DashboardPage() {
           />
           <StatsCard
             title="Active Sessions"
-            value={stats?.activeSessions || activeSessions.length}
+            value={stats?.activeSessions || (activeSessions?.length ?? 0)}
             icon={<Activity className="w-5 h-5 text-foreground" />}
           />
           <StatsCard

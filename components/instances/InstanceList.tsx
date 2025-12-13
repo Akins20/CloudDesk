@@ -97,7 +97,7 @@ export function InstanceList() {
     { value: 'inactive', label: 'Inactive' },
   ];
 
-  if (isLoading && instances.length === 0) {
+  if (isLoading && instances && instances.length === 0) {
     return <PageLoader message="Loading instances..." />;
   }
 
@@ -163,7 +163,7 @@ export function InstanceList() {
         </div>
       )}
 
-      {instances.length === 0 ? (
+      {instances && instances.length === 0 ? (
         <EmptyState
           icon={<Server className="w-8 h-8" />}
           title="No instances found"
@@ -187,7 +187,7 @@ export function InstanceList() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {instances.map((instance) => (
+            {instances && instances.map((instance) => (
               <InstanceCard
                 key={instance.id}
                 instance={instance}
@@ -196,7 +196,7 @@ export function InstanceList() {
             ))}
           </div>
 
-          {pagination.totalPages > 1 && (
+          {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
               <Button
                 variant="outline"

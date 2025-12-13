@@ -16,7 +16,7 @@ export function RecentInstances() {
     fetchInstances({ limit: 5 });
   }, [fetchInstances]);
 
-  const recentInstances = instances.slice(0, 5);
+  const recentInstances = instances && instances.slice(0, 5);
 
   return (
     <Card>
@@ -32,7 +32,7 @@ export function RecentInstances() {
         </Button>
       </CardHeader>
       <CardContent>
-        {recentInstances.length === 0 ? (
+        {recentInstances && recentInstances?.length === 0 ? (
           <EmptyState
             icon={<Server className="w-6 h-6" />}
             title="No instances yet"
@@ -45,7 +45,7 @@ export function RecentInstances() {
           />
         ) : (
           <div className="space-y-3">
-            {recentInstances.map((instance) => (
+            {recentInstances && recentInstances?.map((instance) => (
               <div
                 key={instance.id}
                 className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"

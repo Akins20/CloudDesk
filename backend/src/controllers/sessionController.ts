@@ -55,17 +55,32 @@ export const getActiveSessions = asyncHandler(async (req: Request, res: Response
 
   const sessions = await sessionService.getActiveSessions(userId);
 
+  const isActiveStatus = (status: string) => status === 'connected' || status === 'connecting';
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
-    data: sessions.map((session) => ({
-      id: session._id.toString(),
-      instanceId: session.instanceId,
-      vncDisplayNumber: session.vncDisplayNumber,
-      websocketPort: session.websocketPort,
-      status: session.status,
-      connectionStartedAt: session.connectionStartedAt,
-      lastActivityAt: session.lastActivityAt,
-    })),
+    data: sessions.map((session) => {
+      const duration = session.connectionStartedAt
+        ? Date.now() - new Date(session.connectionStartedAt).getTime()
+        : null;
+      return {
+        id: session._id.toString(),
+        instanceId: session.instanceId,
+        vncDisplayNumber: session.vncDisplayNumber,
+        vncPort: session.vncPort,
+        sshTunnelLocalPort: session.sshTunnelLocalPort,
+        websocketPort: session.websocketPort,
+        status: session.status,
+        errorMessage: session.errorMessage,
+        connectionStartedAt: session.connectionStartedAt,
+        connectionEndedAt: session.connectionEndedAt,
+        lastActivityAt: session.lastActivityAt,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+        isActive: isActiveStatus(session.status),
+        duration,
+      };
+    }),
   });
 });
 
@@ -90,6 +105,13 @@ export const getSession = asyncHandler(async (req: Request, res: Response): Prom
     return;
   }
 
+  const isActive = session.status === 'connected' || session.status === 'connecting';
+  const duration = session.connectionStartedAt
+    ? (session.connectionEndedAt
+        ? new Date(session.connectionEndedAt).getTime() - new Date(session.connectionStartedAt).getTime()
+        : Date.now() - new Date(session.connectionStartedAt).getTime())
+    : null;
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: {
@@ -105,6 +127,9 @@ export const getSession = asyncHandler(async (req: Request, res: Response): Prom
       connectionEndedAt: session.connectionEndedAt,
       lastActivityAt: session.lastActivityAt,
       createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      isActive,
+      duration,
     },
   });
 });
@@ -139,8 +164,7 @@ export const getStats = asyncHandler(async (req: Request, res: Response): Promis
     data: {
       activeSessions: stats.activeSessions,
       totalSessions: stats.totalSessions,
-      totalDurationMs: stats.totalDuration,
-      totalDurationHours: Math.round(stats.totalDuration / 3600000 * 100) / 100,
+      totalDuration: stats.totalDuration,
     },
   });
 });

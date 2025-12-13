@@ -70,14 +70,13 @@ export const useInstanceStore = create<InstanceStore>()((set, get) => ({
       const mergedQuery = { ...get().filters, ...query };
       const response = await instanceService.getInstances(mergedQuery);
       set({
-        instances: response.data,
-        pagination: response.pagination,
+        instances: response?.data || [],
+        pagination: response?.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 },
         isLoading: false,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch instances';
-      set({ error: message, isLoading: false });
-      throw error;
+      set({ error: message, isLoading: false, instances: [] });
     }
   },
 
