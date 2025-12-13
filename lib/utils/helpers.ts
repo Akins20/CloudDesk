@@ -75,12 +75,15 @@ export function formatDate(dateString: string | undefined): string {
   }
 }
 
-export function formatDuration(seconds: number | null | undefined): string {
-  if (seconds === null || seconds === undefined) return '0s';
+export function formatDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined || ms === 0) return '0s';
 
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
+  // Convert milliseconds to seconds
+  const totalSeconds = Math.floor(ms / 1000);
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = Math.floor(totalSeconds % 60);
 
   const parts: string[] = [];
   if (hours > 0) parts.push(`${hours}h`);

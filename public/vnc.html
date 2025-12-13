@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VNC Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; background: #000; }
+        #screen { width: 100%; height: 100%; }
+        #status {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-family: system-ui, sans-serif;
+            text-align: center;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #333;
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div id="screen"></div>
+    <div id="status">
+        <div class="spinner"></div>
+        <div>Connecting to remote desktop...</div>
+    </div>
+
+    <script type="module">
+        import RFB from '/novnc/core/rfb.js';
+
+        console.log('[vnc.html] Script loaded');
+
+        const params = new URLSearchParams(window.location.search);
+        const wsUrl = params.get('url');
+        const statusEl = document.getElementById('status');
+
+        console.log('[vnc.html] WebSocket URL:', wsUrl);
+
+        if (!wsUrl) {
+            console.error('[vnc.html] Missing WebSocket URL');
+            statusEl.innerHTML = '<div class="error">Missing WebSocket URL</div>';
+            window.parent.postMessage({ type: 'vnc-error', error: 'Missing WebSocket URL' }, '*');
+        } else {
+            try {
+                console.log('[vnc.html] Creating RFB connection...');
+                const rfb = new RFB(document.getElementById('screen'), wsUrl, {
+                    credentials: { password: '' }
+                });
+
+                rfb.scaleViewport = true;
+                rfb.resizeSession = true;
+                rfb.showDotCursor = true;
+
+                console.log('[vnc.html] RFB object created, waiting for connection...');
+
+                rfb.addEventListener('connect', () => {
+                    console.log('[vnc.html] Connected!');
+                    statusEl.style.display = 'none';
+                    window.parent.postMessage({ type: 'vnc-connected' }, '*');
+                });
+
+                rfb.addEventListener('disconnect', (e) => {
+                    console.log('[vnc.html] Disconnected:', e.detail);
+                    if (e.detail.clean) {
+                        statusEl.innerHTML = '<div>Disconnected</div>';
+                    } else {
+                        statusEl.innerHTML = '<div class="error">Connection lost (code: ' + (e.detail.code || 'unknown') + ', reason: ' + (e.detail.reason || 'unknown') + ')</div>';
+                    }
+                    statusEl.style.display = 'block';
+                    window.parent.postMessage({ type: 'vnc-disconnected', clean: e.detail.clean, code: e.detail.code, reason: e.detail.reason }, '*');
+                });
+
+                rfb.addEventListener('securityfailure', (e) => {
+                    console.error('[vnc.html] Security failure:', e.detail);
+                    statusEl.innerHTML = '<div class="error">Security error: ' + e.detail.reason + '</div>';
+                    statusEl.style.display = 'block';
+                    window.parent.postMessage({ type: 'vnc-error', error: 'Security error: ' + e.detail.reason }, '*');
+                });
+
+                // Expose for parent window control
+                window.vncRFB = rfb;
+            } catch (err) {
+                console.error('[vnc.html] VNC Error:', err);
+                statusEl.innerHTML = '<div class="error">Failed to connect: ' + err.message + '</div>';
+                window.parent.postMessage({ type: 'vnc-error', error: err.message }, '*');
+            }
+        }
+    </script>
+</body>
+</html>

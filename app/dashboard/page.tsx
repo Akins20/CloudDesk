@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Server, Activity, Clock, Wifi } from 'lucide-react';
+import { Server, Activity, Clock, Wifi, History } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout';
 import { StatsCard, ActiveSessions, RecentInstances } from '@/components/dashboard';
 import { useAuthStore, useInstanceStore, useSessionStore } from '@/lib/stores';
@@ -33,7 +33,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatsCard
             title="Total Instances"
             value={instanceList.length}
@@ -48,6 +48,11 @@ export default function DashboardPage() {
             title="Active Sessions"
             value={stats?.activeSessions || (activeSessions?.length ?? 0)}
             icon={<Activity className="w-5 h-5 text-foreground" />}
+          />
+          <StatsCard
+            title="Total Sessions"
+            value={stats?.totalSessions || 0}
+            icon={<History className="w-5 h-5 text-foreground" />}
           />
           <StatsCard
             title="Total Session Time"

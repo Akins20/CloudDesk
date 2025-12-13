@@ -177,6 +177,19 @@ class TunnelService {
   }
 
   /**
+   * Update tunnel session ID after session is created
+   */
+  updateTunnelSessionId(localPort: number, sessionId: string): boolean {
+    const tunnel = this.activeTunnels.get(localPort);
+    if (tunnel) {
+      tunnel.info.sessionId = sessionId;
+      logger.debug(`Updated tunnel session ID: port ${localPort} -> session ${sessionId}`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Get all active tunnels
    */
   getActiveTunnels(): TunnelInfo[] {

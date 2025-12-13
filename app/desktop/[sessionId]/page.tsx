@@ -68,7 +68,7 @@ export default function DesktopPage() {
   }
 
   // Construct websocket URL from session data
-  const websocketUrl = sessionInfo?.websocketUrl || `/ws/vnc/${sessionId}`;
+  const websocketUrl = sessionInfo?.websocketUrl || `/vnc?sessionId=${sessionId}`;
 
   return (
     <div className="h-screen bg-black">

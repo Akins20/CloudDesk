@@ -3,7 +3,6 @@ import { VNC_CONSTANTS } from '../config/constants';
 import { VNCError } from '../utils/errors';
 import { logger, logVNC } from '../utils/logger';
 import { sshService } from './sshService';
-import { generateRandomPassword } from '../utils/helpers';
 
 interface VNCServerInfo {
   displayNumber: number;
@@ -48,10 +47,10 @@ class VNCService {
    */
   async getRunningVNCDisplays(client: Client): Promise<number[]> {
     try {
-      // Check for running VNC processes
+      // Check for running VNC processes - extract display number which follows Xvnc/Xtigervnc
       const result = await sshService.executeCommand(
         client,
-        "ps aux | grep -E '[X]vnc|[X]tigervnc' | awk '{print $NF}' | grep -oE ':[0-9]+' | sed 's/://g'"
+        "ps aux | grep -E 'Xvnc|Xtigervnc' | grep -v grep | grep -oE ' :[0-9]+' | tr -d ' :' | sort -u"
       );
 
       if (result.code !== 0 || !result.stdout.trim()) {
@@ -132,14 +131,37 @@ class VNCService {
    */
   async createXStartup(client: Client, desktop: 'xfce' | 'lxde'): Promise<void> {
     const xstartupContent: Record<string, string> = {
-      xfce: `#!/bin/bash
+      xfce: `#!/bin/sh
+# TigerVNC xstartup for headless XFCE
+
 unset SESSION_MANAGER
 unset DBUS_SESSION_BUS_ADDRESS
-export XKL_XMODMAP_DISABLE=1
-exec startxfce4`,
+
+[ -r \$HOME/.Xresources ] && xrdb \$HOME/.Xresources
+
+# Start XFCE in background
+startxfce4 &
+XFCE_PID=\$!
+
+# Wait then kill problematic apps that crash on headless
+sleep 3
+pkill -9 light-locker 2>/dev/null
+pkill -9 xscreensaver 2>/dev/null
+pkill -9 gnome-screensaver 2>/dev/null
+
+# Wait for XFCE
+wait \$XFCE_PID`,
       lxde: `#!/bin/bash
 unset SESSION_MANAGER
 unset DBUS_SESSION_BUS_ADDRESS
+export XDG_SESSION_TYPE=x11
+export XDG_CURRENT_DESKTOP=LXDE
+
+# Start dbus if not running
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+    eval $(dbus-launch --sh-syntax)
+fi
+
 exec startlxde`,
     };
 
@@ -147,17 +169,24 @@ exec startlxde`,
       // Create .vnc directory
       await sshService.executeCommand(client, 'mkdir -p ~/.vnc');
 
-      // Write xstartup file
+      // Write xstartup file using cat with heredoc for proper multiline handling
       const content = xstartupContent[desktop];
-      const escapedContent = content.replace(/"/g, '\\"');
 
+      // Use base64 encoding to avoid shell escaping issues
+      const base64Content = Buffer.from(content).toString('base64');
       await sshService.executeCommand(
         client,
-        `echo "${escapedContent}" > ~/.vnc/xstartup`
+        `echo "${base64Content}" | base64 -d > ~/.vnc/xstartup`
       );
 
       // Make executable
       await sshService.executeCommand(client, 'chmod +x ~/.vnc/xstartup');
+
+      // Disable light-locker autostart if it exists
+      await sshService.executeCommand(
+        client,
+        'mkdir -p ~/.config/autostart && echo "[Desktop Entry]\\nHidden=true" > ~/.config/autostart/light-locker.desktop 2>/dev/null || true'
+      );
 
       logVNC('xstartup_created', 'vnc', { desktop });
     } catch (error) {
@@ -199,25 +228,41 @@ exec startlxde`,
       // Create xstartup for the desktop environment
       await this.createXStartup(client, desktop);
 
-      // Generate and set VNC password if not already set
-      const password = generateRandomPassword(VNC_CONSTANTS.PASSWORD_LENGTH);
-      await this.setVNCPassword(client, password);
+      // Kill any existing VNC server on this display first
+      await sshService.executeCommand(client, `vncserver -kill :${displayNumber} 2>/dev/null || true`);
 
-      // Start VNC server
-      const startCommand = `vncserver :${displayNumber} -geometry ${geometry} -depth ${depth}`;
+      // Start VNC server with no authentication (security is handled by our WebSocket proxy)
+      const startCommand = `vncserver :${displayNumber} -geometry ${geometry} -depth ${depth} -SecurityTypes None 2>&1`;
+      logger.info('Starting VNC server with command:', startCommand);
       const result = await sshService.executeCommand(client, startCommand);
 
-      if (result.code !== 0 && !result.stderr.includes('already running')) {
+      logger.info('VNC server start result:', {
+        code: result.code,
+        stdout: result.stdout,
+        stderr: result.stderr
+      });
+
+      if (result.code !== 0 && !result.stderr.includes('already running') && !result.stdout.includes('already running')) {
         logger.error('VNC server start failed:', { stdout: result.stdout, stderr: result.stderr });
-        throw new VNCError(`Failed to start VNC server: ${result.stderr}`);
+        throw new VNCError(`Failed to start VNC server: ${result.stderr || result.stdout}`);
       }
 
-      // Verify the server started
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for server to start
+      // Verify the server started - wait a bit longer
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
+      // Check running displays with more verbose logging
       const newRunningDisplays = await this.getRunningVNCDisplays(client);
+      logger.info('Running VNC displays after start:', newRunningDisplays);
+
       if (!newRunningDisplays.includes(displayNumber)) {
-        throw new VNCError('VNC server failed to start - display not found after startup');
+        // Check VNC log file for errors
+        const logResult = await sshService.executeCommand(
+          client,
+          `cat ~/.vnc/*.log 2>/dev/null | tail -20 || echo "No VNC logs found"`
+        );
+        logger.error('VNC log contents:', logResult.stdout);
+
+        throw new VNCError(`VNC server failed to start - display :${displayNumber} not found. Check VNC logs: ${logResult.stdout.substring(0, 500)}`);
       }
 
       const port = this.getVNCPort(displayNumber);

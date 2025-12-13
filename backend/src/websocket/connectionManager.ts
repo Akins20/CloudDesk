@@ -6,12 +6,14 @@ interface ConnectionEntry {
   ws: WebSocket;
   info: WSConnectionInfo;
   isAlive: boolean;
+  missedPongs: number;
 }
 
 class ConnectionManager {
   private connections: Map<string, ConnectionEntry> = new Map();
   private heartbeatInterval: NodeJS.Timeout | null = null;
-  private readonly HEARTBEAT_INTERVAL = 30000; // 30 seconds
+  private readonly HEARTBEAT_INTERVAL = 60000; // 60 seconds
+  private readonly MAX_MISSED_PONGS = 3; // Allow 3 missed pongs before disconnect
 
   /**
    * Start the heartbeat checker
@@ -50,6 +52,7 @@ class ConnectionManager {
       ws,
       info,
       isAlive: true,
+      missedPongs: 0,
     };
 
     this.connections.set(sessionId, entry);
@@ -59,6 +62,7 @@ class ConnectionManager {
       const conn = this.connections.get(sessionId);
       if (conn) {
         conn.isAlive = true;
+        conn.missedPongs = 0;
       }
     });
 
@@ -159,9 +163,14 @@ class ConnectionManager {
   private checkConnections(): void {
     for (const [sessionId, entry] of this.connections) {
       if (!entry.isAlive) {
-        logger.warn(`WebSocket connection dead, removing: ${sessionId}`);
-        this.removeConnection(sessionId);
-        continue;
+        entry.missedPongs++;
+        logger.debug(`Session ${sessionId} missed pong (${entry.missedPongs}/${this.MAX_MISSED_PONGS})`);
+
+        if (entry.missedPongs >= this.MAX_MISSED_PONGS) {
+          logger.warn(`WebSocket connection dead after ${this.MAX_MISSED_PONGS} missed pongs, removing: ${sessionId}`);
+          this.removeConnection(sessionId);
+          continue;
+        }
       }
 
       // Mark as not alive, will be set to true on pong

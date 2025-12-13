@@ -177,6 +177,9 @@ class SessionService {
 
       await session.save();
 
+      // Update tunnel with actual session ID
+      tunnelService.updateTunnelSessionId(tunnelInfo.localPort, session._id.toString());
+
       // Update instance lastConnectedAt
       await instance.markConnected();
 
@@ -200,7 +203,7 @@ class SessionService {
 
       return {
         sessionId: session._id.toString(),
-        websocketUrl: `ws://localhost:${websocketPort}`,
+        websocketUrl: `/vnc?sessionId=${session._id.toString()}`,
         vncDisplayNumber: vncInfo.displayNumber,
         status: 'connected',
       };

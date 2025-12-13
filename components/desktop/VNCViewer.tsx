@@ -7,14 +7,12 @@ import {
   Minimize2,
   XCircle,
   RefreshCw,
-  Settings,
   Keyboard,
-  Mouse,
 } from 'lucide-react';
 import { Button, Spinner, Card } from '@/components/ui';
 import { useSessionStore, toast } from '@/lib/stores';
 import { ROUTES, SUCCESS_MESSAGES, API_BASE_URL } from '@/lib/utils/constants';
-import { cn } from '@/lib/utils/helpers';
+import { cn, getAccessToken } from '@/lib/utils/helpers';
 
 interface VNCViewerProps {
   sessionId: string;
@@ -24,19 +22,62 @@ interface VNCViewerProps {
 export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
   const router = useRouter();
   const { disconnect } = useSessionStore();
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const rfbRef = useRef<any>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showToolbar, setShowToolbar] = useState(true);
+  const [vncUrl, setVncUrl] = useState<string | null>(null);
+
+  // Build VNC URL on mount
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) {
+      setError('Authentication required. Please log in again.');
+      setIsConnecting(false);
+      return;
+    }
+
+    const baseWsUrl = API_BASE_URL.replace('http://', 'ws://').replace('https://', 'wss://');
+    const separator = websocketUrl.includes('?') ? '&' : '?';
+    const wsUrl = `${baseWsUrl}${websocketUrl}${separator}token=${encodeURIComponent(token)}`;
+
+    // Build iframe URL with encoded WebSocket URL
+    const iframeUrl = `/vnc.html?url=${encodeURIComponent(wsUrl)}`;
+    setVncUrl(iframeUrl);
+  }, [websocketUrl, sessionId]);
+
+  // Listen for messages from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'vnc-connected') {
+        setIsConnected(true);
+        setIsConnecting(false);
+        setError(null);
+      } else if (event.data.type === 'vnc-disconnected') {
+        setIsConnected(false);
+        if (event.data.clean) {
+          toast.info('Disconnected from remote desktop');
+        } else {
+          setError('Connection lost. Please try reconnecting.');
+        }
+      } else if (event.data.type === 'vnc-error') {
+        setError(event.data.error);
+        setIsConnecting(false);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const handleDisconnect = useCallback(async () => {
     try {
-      if (rfbRef.current) {
-        rfbRef.current.disconnect();
-        rfbRef.current = null;
+      // Disconnect VNC in iframe
+      if (iframeRef.current?.contentWindow) {
+        const rfb = (iframeRef.current.contentWindow as any).vncRFB;
+        if (rfb) rfb.disconnect();
       }
       await disconnect(sessionId);
       toast.success(SUCCESS_MESSAGES.DISCONNECTION_SUCCESS);
@@ -47,22 +88,19 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
     }
   }, [sessionId, disconnect, router]);
 
-  const handleReconnect = useCallback(async () => {
+  const handleReconnect = useCallback(() => {
     setIsConnecting(true);
     setError(null);
-
-    if (rfbRef.current) {
-      rfbRef.current.disconnect();
-      rfbRef.current = null;
+    // Reload iframe to reconnect
+    if (iframeRef.current) {
+      iframeRef.current.src = iframeRef.current.src;
     }
-
-    // Re-initialize connection
-    initializeVNC();
   }, []);
 
   const toggleFullscreen = useCallback(async () => {
-    if (!document.fullscreenElement) {
-      await canvasRef.current?.requestFullscreen();
+    const container = document.getElementById('vnc-container');
+    if (!document.fullscreenElement && container) {
+      await container.requestFullscreen();
       setIsFullscreen(true);
     } else {
       await document.exitFullscreen();
@@ -71,70 +109,11 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
   }, []);
 
   const sendCtrlAltDel = useCallback(() => {
-    if (rfbRef.current) {
-      rfbRef.current.sendCtrlAltDel();
+    if (iframeRef.current?.contentWindow) {
+      const rfb = (iframeRef.current.contentWindow as any).vncRFB;
+      if (rfb) rfb.sendCtrlAltDel();
     }
   }, []);
-
-  const initializeVNC = useCallback(async () => {
-    if (!canvasRef.current || typeof window === 'undefined') return;
-
-    try {
-      // Dynamically import noVNC (client-side only)
-      const RFB = (await import('@novnc/novnc/lib/rfb')).default;
-
-      // Build WebSocket URL
-      const wsUrl = websocketUrl.startsWith('ws')
-        ? websocketUrl
-        : `ws://${API_BASE_URL.replace('http://', '').replace('https://', '')}${websocketUrl}`;
-
-      // Create RFB instance
-      const rfb = new RFB(canvasRef.current, wsUrl, {
-        credentials: { password: '' },
-      });
-
-      rfb.scaleViewport = true;
-      rfb.resizeSession = true;
-      rfb.showDotCursor = true;
-
-      rfb.addEventListener('connect', () => {
-        setIsConnected(true);
-        setIsConnecting(false);
-        setError(null);
-      });
-
-      rfb.addEventListener('disconnect', ((e: CustomEvent) => {
-        setIsConnected(false);
-        if (e.detail.clean) {
-          toast.info('Disconnected from remote desktop');
-        } else {
-          setError('Connection lost. Please try reconnecting.');
-        }
-      }) as EventListener);
-
-      rfb.addEventListener('securityfailure', ((e: CustomEvent) => {
-        setError(`Security error: ${e.detail.reason}`);
-        setIsConnecting(false);
-      }) as EventListener);
-
-      rfbRef.current = rfb;
-    } catch (error) {
-      console.error('VNC initialization error:', error);
-      setError('Failed to initialize VNC viewer. Please try again.');
-      setIsConnecting(false);
-    }
-  }, [websocketUrl]);
-
-  useEffect(() => {
-    initializeVNC();
-
-    return () => {
-      if (rfbRef.current) {
-        rfbRef.current.disconnect();
-        rfbRef.current = null;
-      }
-    };
-  }, [initializeVNC]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -142,9 +121,7 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
   // Auto-hide toolbar in fullscreen
@@ -168,7 +145,7 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
     };
   }, [isFullscreen]);
 
-  if (error) {
+  if (error && !vncUrl) {
     return (
       <div className="flex items-center justify-center h-full">
         <Card className="max-w-md text-center">
@@ -193,7 +170,10 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
   }
 
   return (
-    <div className={cn('relative h-full bg-black', isFullscreen && 'fixed inset-0 z-50')}>
+    <div
+      id="vnc-container"
+      className={cn('relative h-full bg-black', isFullscreen && 'fixed inset-0 z-50')}
+    >
       {/* Toolbar */}
       <div
         className={cn(
@@ -210,7 +190,7 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
               )}
             />
             <span className="text-sm text-foreground">
-              {isConnected ? 'Connected' : 'Connecting...'}
+              {isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
             </span>
           </div>
 
@@ -258,21 +238,51 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
         </div>
       </div>
 
-      {/* VNC Canvas Container */}
-      <div
-        ref={canvasRef}
-        className={cn(
-          'w-full h-full flex items-center justify-center',
-          isFullscreen ? 'pt-0' : 'pt-12'
-        )}
-      >
-        {isConnecting && (
+      {/* VNC Iframe */}
+      {vncUrl && (
+        <iframe
+          ref={iframeRef}
+          src={vncUrl}
+          className={cn(
+            'w-full h-full border-0',
+            isFullscreen ? 'pt-0' : 'pt-12'
+          )}
+          allow="fullscreen"
+        />
+      )}
+
+      {/* Loading overlay */}
+      {isConnecting && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 pt-12">
           <div className="flex flex-col items-center gap-4">
             <Spinner size="lg" className="text-white" />
             <p className="text-white text-sm">Connecting to remote desktop...</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Error overlay */}
+      {error && vncUrl && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 pt-12">
+          <Card className="max-w-md text-center">
+            <div className="p-8">
+              <XCircle className="w-12 h-12 text-status-error mx-auto mb-4" />
+              <h2 className="text-lg font-semibold text-foreground mb-2">
+                Connection Error
+              </h2>
+              <p className="text-muted-foreground mb-6">{error}</p>
+              <div className="flex justify-center gap-3">
+                <Button variant="outline" onClick={() => router.push(ROUTES.DASHBOARD)}>
+                  Back to Dashboard
+                </Button>
+                <Button onClick={handleReconnect}>
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
