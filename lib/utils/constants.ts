@@ -21,7 +21,7 @@ export const API_ENDPOINTS = {
     BASE: '/api/sessions',
     BY_ID: (id: string) => `/api/sessions/${id}`,
     CONNECT: '/api/sessions/connect',
-    DISCONNECT: (id: string) => `/api/sessions/${id}/disconnect`,
+    DISCONNECT: (id: string) => `/api/sessions/disconnect/${id}`,
     STATS: '/api/sessions/stats',
   },
   // Health

@@ -56,7 +56,7 @@ export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
     }
   };
 
-  const providerInfo = CLOUD_PROVIDERS[instance.provider];
+  const providerInfo = CLOUD_PROVIDERS[instance.provider] || { label: instance.provider, icon: 'cloud' };
 
   return (
     <>
@@ -148,7 +148,7 @@ export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
           )}
         </div>
 
-        {instance.tags.length > 0 && (
+        {instance.tags && instance.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-4">
             {instance.tags.map((tag) => (
               <span

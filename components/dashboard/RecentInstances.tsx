@@ -60,7 +60,7 @@ export function RecentInstances() {
                       {instance.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {CLOUD_PROVIDERS[instance.provider].label} &middot;{' '}
+                      {CLOUD_PROVIDERS[instance.provider]?.label || instance.provider} &middot;{' '}
                       {formatRelativeTime(instance.lastConnectedAt)}
                     </p>
                   </div>

@@ -60,9 +60,10 @@ export const getActiveSessions = asyncHandler(async (req: Request, res: Response
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: sessions.map((session) => {
-      const duration = session.connectionStartedAt
+      const durationMs = session.connectionStartedAt
         ? Date.now() - new Date(session.connectionStartedAt).getTime()
         : null;
+      const duration = durationMs !== null ? Math.floor(durationMs / 1000) : null;
       return {
         id: session._id.toString(),
         instanceId: session.instanceId,
@@ -106,11 +107,12 @@ export const getSession = asyncHandler(async (req: Request, res: Response): Prom
   }
 
   const isActive = session.status === 'connected' || session.status === 'connecting';
-  const duration = session.connectionStartedAt
+  const durationMs = session.connectionStartedAt
     ? (session.connectionEndedAt
         ? new Date(session.connectionEndedAt).getTime() - new Date(session.connectionStartedAt).getTime()
         : Date.now() - new Date(session.connectionStartedAt).getTime())
     : null;
+  const duration = durationMs !== null ? Math.floor(durationMs / 1000) : null;
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
