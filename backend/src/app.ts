@@ -1,7 +1,6 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { env } from './config/environment';
 import routes from './routes';
 import { errorHandler, notFoundHandler, apiLimiter } from './middleware';
 import { logger } from './utils/logger';
@@ -29,9 +28,9 @@ export const createApp = (): Application => {
     crossOriginEmbedderPolicy: false,
   }));
 
-  // CORS configuration
+  // CORS configuration - allow all origins
   app.use(cors({
-    origin: env.CORS_ORIGIN.split(',').map(origin => origin.trim()),
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
