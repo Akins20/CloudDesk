@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Menu, LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Menu, LogOut, User, Settings, ChevronDown, Clock } from 'lucide-react';
 import { Menu as HeadlessMenu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { useAuthStore, useUIStore } from '@/lib/stores';
@@ -12,6 +13,12 @@ export function Header() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { toggleSidebar } = useUIStore();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -38,6 +45,25 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Clock */}
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/30 border border-border/50">
+            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-sm font-mono text-foreground tabular-nums">
+              {currentTime.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+              })}
+            </span>
+            <span className="text-xs text-muted-foreground hidden lg:inline">
+              {currentTime.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+
           <HeadlessMenu as="div" className="relative">
             <HeadlessMenu.Button className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors">
               <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">

@@ -157,6 +157,7 @@ export const ERROR_MESSAGES = {
   VALIDATION_ERROR: 'Please check your input and try again.',
   CONNECTION_FAILED: 'Failed to connect to the instance. Please check the instance settings.',
   SESSION_TIMEOUT: 'Your session has timed out due to inactivity.',
+  DELETE_FAILED: 'Failed to delete. Please try again.',
 } as const;
 
 // Success Messages
@@ -168,6 +169,7 @@ export const SUCCESS_MESSAGES = {
   INSTANCE_CREATED: 'Instance created successfully.',
   INSTANCE_UPDATED: 'Instance updated successfully.',
   INSTANCE_DELETED: 'Instance deleted successfully.',
+  DELETE_SUCCESS: 'Deleted successfully.',
   CONNECTION_SUCCESS: 'Connected to instance.',
   DISCONNECTION_SUCCESS: 'Disconnected from instance.',
 } as const;

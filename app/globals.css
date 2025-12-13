@@ -224,6 +224,107 @@ body {
 .animate-pulse-glow { animation: pulse-glow 2s infinite; }
 
 /* --------------------------------------------------------------------------
+   Command Center Animations
+   -------------------------------------------------------------------------- */
+
+/* Status pulse - for active indicators */
+@keyframes status-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 8px 4px currentColor;
+    opacity: 0.7;
+  }
+}
+
+/* Panel breathing effect */
+@keyframes panel-breathe {
+  0%, 100% {
+    border-color: hsl(var(--border));
+  }
+  50% {
+    border-color: hsl(var(--border) / 0.8);
+    box-shadow: 0 0 20px 0 hsl(var(--foreground) / 0.05);
+  }
+}
+
+/* Grid sweep animation */
+@keyframes grid-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Connection ring - expanding circle */
+@keyframes connection-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Gauge fill animation */
+@keyframes gauge-fill {
+  from { stroke-dashoffset: var(--gauge-circumference); }
+  to { stroke-dashoffset: var(--gauge-offset); }
+}
+
+/* Number count up effect */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Glow pulse for active elements */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px hsl(var(--status-success) / 0.3),
+                0 0 10px hsl(var(--status-success) / 0.2),
+                0 0 15px hsl(var(--status-success) / 0.1);
+  }
+  50% {
+    box-shadow: 0 0 10px hsl(var(--status-success) / 0.4),
+                0 0 20px hsl(var(--status-success) / 0.3),
+                0 0 30px hsl(var(--status-success) / 0.2);
+  }
+}
+
+/* Scan line effect */
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+/* Command Center utility classes */
+.animate-status-pulse { animation: status-pulse 2s ease-in-out infinite; }
+.animate-panel-breathe { animation: panel-breathe 4s ease-in-out infinite; }
+.animate-grid-sweep { animation: grid-sweep 8s linear infinite; }
+.animate-connection-ring { animation: connection-ring 1.5s ease-out infinite; }
+.animate-gauge-fill { animation: gauge-fill 1s ease-out forwards; }
+.animate-count-up { animation: count-up 0.5s ease-out; }
+.animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+.animate-scan-line { animation: scan-line 3s linear infinite; }
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animate-status-pulse,
+  .animate-panel-breathe,
+  .animate-grid-sweep,
+  .animate-connection-ring,
+  .animate-gauge-fill,
+  .animate-count-up,
+  .animate-glow-pulse,
+  .animate-scan-line {
+    animation: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
    Utility Classes
    -------------------------------------------------------------------------- */
 
