@@ -1,167 +1,179 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   CloudDesk Design System
+   Design Philosophy: Monochrome elegance with glass effects
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties (Design Tokens)
+   -------------------------------------------------------------------------- */
+
 :root {
-  /* CloudDesk Monochrome Color System */
-  --clouddesk-black: #000000;
-  --clouddesk-dark: #0a0a0a;
-  --clouddesk-darker: #1a1a1a;
-  --clouddesk-gray-900: #2d2d2d;
-  --clouddesk-gray-800: #3a3a3a;
-  --clouddesk-gray-700: #4a4a4a;
-  --clouddesk-gray-600: #5a5a5a;
-  --clouddesk-gray-500: #6b6b6b;
-  --clouddesk-gray-400: #9ca3af;
-  --clouddesk-gray-300: #d1d5db;
-  --clouddesk-gray-200: #e5e7eb;
-  --clouddesk-gray-100: #f3f4f6;
-  --clouddesk-white: #ffffff;
+  /* CloudDesk Monochrome Palette - Dark Mode Only */
+  --background: 0 0% 0%;              /* #000000 */
+  --foreground: 0 0% 100%;            /* #FFFFFF */
+  --muted: 0 0% 11%;                  /* #1c1c1c */
+  --muted-foreground: 0 0% 64%;       /* #a3a3a3 */
+  --primary: 0 0% 100%;               /* #FFFFFF */
+  --primary-foreground: 0 0% 0%;      /* #000000 */
+  --secondary: 0 0% 15%;              /* #262626 */
+  --secondary-foreground: 0 0% 100%;  /* #FFFFFF */
+  --accent: 0 0% 15%;                 /* #262626 */
+  --accent-foreground: 0 0% 100%;     /* #FFFFFF */
+  --destructive: 0 84% 60%;           /* #ef4444 */
+  --destructive-foreground: 0 0% 100%;/* #FFFFFF */
+  --border: 0 0% 20%;                 /* #333333 */
+  --input: 0 0% 20%;                  /* #333333 */
+  --ring: 0 0% 40%;                   /* #666666 */
+  --card: 0 0% 4%;                    /* #0a0a0a */
+  --card-foreground: 0 0% 100%;       /* #FFFFFF */
+  --popover: 0 0% 4%;                 /* #0a0a0a */
+  --popover-foreground: 0 0% 100%;    /* #FFFFFF */
 
   /* Status Colors (only for indicators) */
-  --status-success: #10b981;
-  --status-error: #ef4444;
-  --status-warning: #f59e0b;
-  --status-info: #3b82f6;
+  --status-success: 160 84% 39%;      /* #10b981 */
+  --status-error: 0 84% 60%;          /* #ef4444 */
+  --status-warning: 38 92% 50%;       /* #f59e0b */
+  --status-info: 217 91% 60%;         /* #3b82f6 */
 
-  /* Background and foreground */
-  --background: var(--clouddesk-black);
-  --foreground: var(--clouddesk-white);
+  /* Border Radius */
+  --radius: 0.5rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 
-  /* Glass effects */
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-bg-hover: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-border-hover: rgba(255, 255, 255, 0.2);
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
 }
+
+/* --------------------------------------------------------------------------
+   Tailwind v4 Theme Configuration
+   -------------------------------------------------------------------------- */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-
-  /* CloudDesk colors for Tailwind */
-  --color-clouddesk-black: var(--clouddesk-black);
-  --color-clouddesk-dark: var(--clouddesk-dark);
-  --color-clouddesk-darker: var(--clouddesk-darker);
-  --color-gray-900: var(--clouddesk-gray-900);
-  --color-gray-800: var(--clouddesk-gray-800);
-  --color-gray-700: var(--clouddesk-gray-700);
-  --color-gray-600: var(--clouddesk-gray-600);
-  --color-gray-500: var(--clouddesk-gray-500);
-  --color-gray-400: var(--clouddesk-gray-400);
-  --color-gray-300: var(--clouddesk-gray-300);
-  --color-gray-200: var(--clouddesk-gray-200);
-  --color-gray-100: var(--clouddesk-gray-100);
-  --color-clouddesk-white: var(--clouddesk-white);
+  /* Colors mapped to CSS variables */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
 
   /* Status colors */
-  --color-status-success: var(--status-success);
-  --color-status-error: var(--status-error);
-  --color-status-warning: var(--status-warning);
-  --color-status-info: var(--status-info);
+  --color-status-success: hsl(var(--status-success));
+  --color-status-error: hsl(var(--status-error));
+  --color-status-warning: hsl(var(--status-warning));
+  --color-status-info: hsl(var(--status-info));
 
-  /* Glass effects */
-  --color-glass-bg: var(--glass-bg);
-  --color-glass-border: var(--glass-border);
+  /* Fonts */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
 }
 
-/* Base styles */
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+/* --------------------------------------------------------------------------
+   Base Styles
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  border-color: hsl(var(--border));
 }
 
-html,
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Code/monospace */
-code, pre, .font-mono {
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+/* --------------------------------------------------------------------------
+   Focus Styles - Accessibility
+   -------------------------------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }
 
-/* Custom scrollbar */
+/* --------------------------------------------------------------------------
+   Selection Styles
+   -------------------------------------------------------------------------- */
+
+::selection {
+  background-color: hsl(var(--foreground) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+/* --------------------------------------------------------------------------
+   Scrollbar Styles
+   -------------------------------------------------------------------------- */
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--clouddesk-dark);
+  background: hsl(var(--muted));
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--clouddesk-gray-700);
+  background: hsl(var(--muted-foreground) / 0.5);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--clouddesk-gray-600);
+  background: hsl(var(--muted-foreground) / 0.7);
 }
 
-/* Selection */
-::selection {
-  background: rgba(255, 255, 255, 0.2);
-  color: var(--clouddesk-white);
-}
+/* --------------------------------------------------------------------------
+   Animation Keyframes
+   -------------------------------------------------------------------------- */
 
-/* Focus styles */
-:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.5);
-  outline-offset: 2px;
-}
-
-/* Link reset */
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* Utility classes for glass effects */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-}
-
-.glass-dark {
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-}
-
-.glass-hover:hover {
-  background: var(--glass-bg-hover);
-  border-color: var(--glass-border-hover);
-}
-
-/* Gradient backgrounds */
-.bg-gradient-dark {
-  background: linear-gradient(135deg, var(--clouddesk-black) 0%, var(--clouddesk-dark) 100%);
-}
-
-.bg-gradient-glass {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-}
-
-/* Animation utilities */
-@keyframes fadeIn {
+@keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes slideUp {
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slide-up {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -172,65 +184,79 @@ a {
   }
 }
 
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.1);
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-  50% {
-    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s ease-out;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s infinite;
-}
-
-/* Status badge colors */
-.status-success {
-  color: var(--status-success);
-}
-
-.status-error {
-  color: var(--status-error);
-}
-
-.status-warning {
-  color: var(--status-warning);
-}
-
-.status-info {
-  color: var(--status-info);
-}
-
-.bg-status-success {
-  background-color: var(--status-success);
-}
-
-.bg-status-error {
-  background-color: var(--status-error);
-}
-
-.bg-status-warning {
-  background-color: var(--status-warning);
-}
-
-.bg-status-info {
-  background-color: var(--status-info);
-}
-
-/* Loading spinner */
 @keyframes spin {
+  from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--foreground) / 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px hsl(var(--foreground) / 0);
+  }
+}
+
+/* Animation utilities */
+.animate-fade-in { animation: fade-in 0.2s ease-out; }
+.animate-fade-out { animation: fade-out 0.2s ease-out; }
+.animate-slide-up { animation: slide-up 0.3s ease-out; }
+.animate-slide-down { animation: slide-down 0.3s ease-out; }
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.animate-pulse-glow { animation: pulse-glow 2s infinite; }
+
+/* --------------------------------------------------------------------------
+   Utility Classes
+   -------------------------------------------------------------------------- */
+
+/* Glass Effect */
+.glass {
+  background: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-card {
+  background: hsl(var(--card) / 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* Gradient backgrounds */
+.bg-gradient-dark {
+  background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Loading spinner */
 .spinner {
   animation: spin 1s linear infinite;
 }

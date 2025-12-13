@@ -13,14 +13,14 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', padding = 'md', hover = false, children, ...props }, ref) => {
     const variants = {
       default: 'bg-card border border-border',
-      glass: 'glass',
+      glass: 'bg-card/80 backdrop-blur-xl border border-border/50 shadow-xl',
     };
 
     const paddings = {
       none: '',
-      sm: 'p-3',
-      md: 'p-4',
-      lg: 'p-6',
+      sm: 'p-4',
+      md: 'p-5',
+      lg: 'p-8',
     };
 
     return (

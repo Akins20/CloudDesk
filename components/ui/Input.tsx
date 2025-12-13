@@ -29,9 +29,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
-        <div className="relative">
+        <div className="relative flex items-center">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10 flex items-center justify-center">
               {leftIcon}
             </div>
           )}
@@ -40,12 +40,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={inputType}
             className={cn(
-              'w-full h-10 px-3 rounded-lg border bg-card text-foreground placeholder:text-muted-foreground',
+              'w-full h-11 px-4 rounded-lg border bg-card/50 text-foreground placeholder:text-muted-foreground/60',
               'transition-all duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground',
+              'focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground focus:bg-card',
               'disabled:opacity-50 disabled:cursor-not-allowed',
-              leftIcon ? 'pl-10' : '',
-              (rightIcon || isPassword) ? 'pr-10' : '',
+              leftIcon ? 'pl-11' : '',
+              (rightIcon || isPassword) ? 'pr-11' : '',
               error
                 ? 'border-status-error focus:ring-status-error/20 focus:border-status-error'
                 : 'border-border',
@@ -57,14 +57,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors z-10"
               tabIndex={-1}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           ) : (
             rightIcon && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10">
                 {rightIcon}
               </div>
             )
