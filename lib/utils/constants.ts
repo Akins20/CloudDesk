@@ -1,8 +1,7 @@
 // API Configuration
 // IMPORTANT: Use HTTPS in production to avoid mixed content errors
 // Set NEXT_PUBLIC_API_URL in .env.local or Vercel environment variables
-// Example: https://api.clouddesk.com or https://YOUR_SERVER_IP
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://18.209.65.32:3000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://18.209.65.32';
 export const API_ENDPOINTS = {
   // Auth
   AUTH: {

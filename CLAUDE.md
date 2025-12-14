@@ -75,3 +75,4 @@ Monochrome palette with glassy effects:
 3. Start VNC server on available display
 4. Create SSH tunnel (local port -> VNC port)
 5. WebSocket proxy connects noVNC client to tunnel
+- Backend server credentials are in backend directory in a server credentials file
