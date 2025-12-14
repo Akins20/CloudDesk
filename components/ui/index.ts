@@ -10,8 +10,8 @@ export type { SelectProps, SelectOption } from './Select';
 export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './Card';
 export type { CardProps } from './Card';
 
-export { Modal, ConfirmModal } from './Modal';
-export type { ModalProps, ConfirmModalProps } from './Modal';
+export { Modal, ConfirmModal, PasswordPrompt } from './Modal';
+export type { ModalProps, ConfirmModalProps, PasswordPromptProps } from './Modal';
 
 export { Badge, StatusBadge } from './Badge';
 export type { BadgeProps, StatusBadgeProps } from './Badge';
@@ -23,3 +23,6 @@ export { ToastContainer } from './Toast';
 
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
+
+export { InfoPanel, StepsList } from './InfoPanel';
+export type { InfoPanelProps, InfoPanelStep, InfoPanelTab } from './InfoPanel';

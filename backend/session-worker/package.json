@@ -1,0 +1,29 @@
+{
+  "name": "clouddesk-session-worker",
+  "version": "1.0.0",
+  "description": "CloudDesk session worker - handles individual VNC sessions",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["clouddesk", "vnc", "session", "worker"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.3",
+    "ssh2": "^1.17.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.0.1",
+    "@types/ssh2": "^1.15.5",
+    "@types/ws": "^8.18.1",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  }
+}

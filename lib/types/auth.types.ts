@@ -37,3 +37,18 @@ export interface ChangePasswordData {
   currentPassword: string;
   newPassword: string;
 }
+
+export interface DeleteAccountData {
+  password: string;
+  confirmDelete: 'DELETE';
+}
+
+export interface DeleteAccountResponse {
+  message: string;
+  deleted: {
+    instances: number;
+    sessions: number;
+    auditLogs: number;
+    user: number;
+  };
+}

@@ -5,17 +5,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 CloudDesk is a web application for managing remote desktop connections to cloud instances (EC2/OCI) via VNC. It consists of:
-- **Frontend**: Next.js 16 with React 19, TypeScript, and Tailwind CSS 4
-- **Backend**: Node.js/Express with MongoDB (planned, in `backend/` directory)
+- **Frontend**: Next.js 16 with React 19, TypeScript, and Tailwind CSS 4 (Vercel-hosted)
+- **Backend**: Node.js/Express with MongoDB, Redis, containerized with Docker
 
 ## Commands
 
-### Development
+### Frontend Development
 ```bash
 npm run dev      # Start Next.js dev server (http://localhost:3000)
 npm run build    # Production build
 npm run start    # Start production server
 npm run lint     # Run ESLint
+```
+
+### Backend Development
+```bash
+cd backend
+npm run dev      # Start with hot reload (ts-node-dev)
+npm run build    # Compile TypeScript
+npm start        # Start production server
+```
+
+### Docker (Production)
+```bash
+cd backend
+docker compose -f docker-compose.prod.yml up -d   # Start full stack
+docker compose -f docker-compose.prod.yml down    # Stop stack
+docker compose -f docker-compose.prod.yml logs    # View logs
 ```
 
 ### Testing
@@ -26,25 +42,59 @@ npx playwright test --workers=1
 
 ## Architecture
 
-### Frontend (Current - Next.js App Router)
+### Frontend (Next.js App Router)
 - Uses App Router (`app/` directory)
 - Path alias: `@/*` maps to project root
+- State Management: Zustand (stores in `lib/stores/`)
+- API Client: Axios with JWT interceptors (`lib/services/api.ts`)
+- VNC Integration: noVNC library for desktop viewing
+- Forms: React Hook Form + Zod validation
 - Styling: Tailwind CSS with monochrome + glassy design system
-- Fonts: Geist Sans and Geist Mono via `next/font`
+- Key Pages: Login, Register, Dashboard, Instances, Sessions, Settings, DesktopView
 
-### Planned Frontend Structure (per FRONTEND_SPECIFICATIONS.md)
-- **State Management**: Zustand (stores in `src/store/`)
-- **API Client**: Axios with JWT interceptors (`src/services/api.ts`)
-- **VNC Integration**: noVNC library for desktop viewing
-- **Forms**: React Hook Form + Zod validation
-- **Key Pages**: Login, Register, Dashboard, Instances, DesktopView
+### Backend (Containerized)
+- **API Server**: Express.js (`backend/src/`)
+- **Database**: MongoDB 7 (containerized)
+- **Cache/PubSub**: Redis 7 (containerized)
+- **Session Controller**: Manages VNC worker containers (`backend/session-controller/`)
+- **Session Worker**: Isolated VNC proxy per session (`backend/session-worker/`)
+- **Host NGINX**: SSL termination (port 443)
 
-### Backend Structure (per BACKEND_SPECIFICATIONS.md)
-- **Stack**: Express.js, MongoDB/Mongoose, JWT auth
-- **Services**: sshService, vncService, tunnelService, encryptionService, sessionService
-- **SSH**: ssh2 library for connections and tunneling
-- **WebSocket**: VNC proxy for noVNC client communication
-- **Security**: AES-256 encryption for credentials, Helmet, rate limiting
+### Container Architecture
+```
+┌─────────────────────────────────────────────────────────┐
+│  Host NGINX (SSL)  ←───────────────────────────────────┤
+│        │                                                │
+│        ↓                                                │
+│  ┌─────────────────────────────────────────────────┐  │
+│  │  docker-compose.prod.yml                         │  │
+│  │  ┌──────────┐  ┌────────┐  ┌─────────────────┐ │  │
+│  │  │  Redis   │  │ MongoDB│  │ Backend API     │ │  │
+│  │  │  :6379   │  │ :27017 │  │ :3000           │ │  │
+│  │  └──────────┘  └────────┘  └─────────────────┘ │  │
+│  │  ┌──────────────────────────────────────────┐  │  │
+│  │  │ Session Controller                        │  │  │
+│  │  │ (Spawns worker containers via Docker API)│  │  │
+│  │  └──────────────────────────────────────────┘  │  │
+│  └─────────────────────────────────────────────────┘  │
+│                         ↓                              │
+│  ┌─────────────────────────────────────────────────┐  │
+│  │  Session Workers (Dynamic)                       │  │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐      │  │
+│  │  │ Worker 1 │  │ Worker 2 │  │ Worker N │      │  │
+│  │  │ :8080    │  │ :8081    │  │ :808X    │      │  │
+│  │  └──────────┘  └──────────┘  └──────────┘      │  │
+│  └─────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Services
+- **sshService**: SSH2 connections
+- **vncService**: VNC server management on remote instances
+- **tunnelService**: SSH tunnel management
+- **encryptionService**: Server-side AES-256 encryption
+- **sessionService**: Session lifecycle management
+- **sessionRegistry**: Redis-based session state and pub/sub
 
 ## Design System
 
@@ -69,10 +119,67 @@ Monochrome palette with glassy effects:
 - Refresh Token: 7 days, with version tracking for invalidation
 - Sliding session via token refresh
 
-### SSH/VNC Flow
-1. SSH connect to instance
-2. Check/install VNC server and desktop environment (XFCE/LXDE)
-3. Start VNC server on available display
-4. Create SSH tunnel (local port -> VNC port)
-5. WebSocket proxy connects noVNC client to tunnel
-- Backend server credentials are in backend directory in a server credentials file
+### Credential Security
+- Frontend encrypts SSH keys/passwords with user's account password (Web Crypto API)
+- Backend stores encrypted credentials (zero-knowledge - cannot decrypt)
+- User must enter password to view/edit/use credentials
+
+### SSH/VNC Flow (Containerized)
+1. User requests connection → API validates and publishes to Redis
+2. Session Controller receives request → Spawns worker container
+3. Worker establishes SSH → Starts VNC → Creates tunnel → WebSocket proxy
+4. noVNC client connects to worker via WebSocket
+5. Heartbeat monitoring for session health
+6. Cleanup on disconnect or timeout
+
+## Backend Server
+- Production URL: https://api.freddyreyes.com (18.209.65.32)
+- SSH credentials in `backend/Backend_Server_Credentials.txt`
+- SSH key: `backend/CloudDesk.pem`
+- Working directory: `~/clouddesk`
+
+## Key Files
+
+### Frontend
+- `lib/utils/crypto.ts` - Client-side encryption utilities
+- `lib/stores/` - Zustand stores for state management
+- `components/ui/InfoPanel.tsx` - Contextual help panels
+- `components/instances/InstanceForm.tsx` - Instance creation with encryption
+
+### Backend
+- `backend/docker-compose.prod.yml` - Production container orchestration
+- `backend/src/services/sessionService.ts` - Session lifecycle
+- `backend/src/services/redis/sessionRegistry.ts` - Redis session state
+- `backend/session-controller/` - Container orchestration
+- `backend/session-worker/` - Per-session VNC proxy
+
+### API Endpoints
+
+#### Sessions
+- `POST /api/sessions/connect` - Start VNC session
+- `POST /api/sessions/disconnect/:id` - End session
+- `GET /api/sessions/active` - Get active sessions
+- `GET /api/sessions/history` - Session history with pagination
+- `GET /api/sessions/stats` - Session statistics
+- `POST /api/sessions/disconnect-all` - Disconnect all sessions
+
+#### Users
+- `GET /api/users/profile` - Get user profile
+- `PUT /api/users/profile` - Update user profile
+- `DELETE /api/users/account` - Delete account and all data (requires password + "DELETE" confirmation)
+
+#### Instances
+- `GET /api/instances` - List all instances
+- `POST /api/instances` - Create instance
+- `GET /api/instances/:id` - Get instance
+- `PUT /api/instances/:id` - Update instance
+- `DELETE /api/instances/:id` - Delete instance
+- `POST /api/instances/:id/test-connection` - Test SSH connection
+
+#### Auth
+- `POST /api/auth/login` - Login
+- `POST /api/auth/register` - Register
+- `POST /api/auth/logout` - Logout
+- `POST /api/auth/refresh` - Refresh tokens
+- `GET /api/auth/me` - Get current user
+- `POST /api/auth/change-password` - Change password

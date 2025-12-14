@@ -189,6 +189,53 @@ export const disconnectAll = asyncHandler(async (req: Request, res: Response): P
   });
 });
 
+/**
+ * Get all sessions (including history)
+ * GET /api/sessions/history
+ */
+export const getSessionHistory = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { userId } = (req as AuthRequest).user;
+  const { limit = 50, offset = 0, status } = req.query;
+
+  const sessions = await sessionService.getSessionHistory(
+    userId,
+    Number(limit),
+    Number(offset),
+    status as string | undefined
+  );
+
+  const isActiveStatus = (s: string) => s === 'connected' || s === 'connecting';
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: sessions.map((session) => {
+      const durationMs = session.connectionStartedAt
+        ? (session.connectionEndedAt
+            ? new Date(session.connectionEndedAt).getTime() - new Date(session.connectionStartedAt).getTime()
+            : Date.now() - new Date(session.connectionStartedAt).getTime())
+        : null;
+      const duration = durationMs !== null ? Math.floor(durationMs / 1000) : null;
+      return {
+        id: session._id.toString(),
+        instanceId: session.instanceId,
+        vncDisplayNumber: session.vncDisplayNumber,
+        vncPort: session.vncPort,
+        sshTunnelLocalPort: session.sshTunnelLocalPort,
+        websocketPort: session.websocketPort,
+        status: session.status,
+        errorMessage: session.errorMessage,
+        connectionStartedAt: session.connectionStartedAt,
+        connectionEndedAt: session.connectionEndedAt,
+        lastActivityAt: session.lastActivityAt,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+        isActive: isActiveStatus(session.status),
+        duration,
+      };
+    }),
+  });
+});
+
 export default {
   connect,
   disconnect,
@@ -197,4 +244,5 @@ export default {
   updateActivity,
   getStats,
   disconnectAll,
+  getSessionHistory,
 };

@@ -16,6 +16,7 @@ import type {
 interface SessionState {
   sessions: Session[];
   activeSessions: Session[];
+  sessionHistory: Session[];
   currentSession: Session | null;
   sessionInfo: SessionInfo | null;
   stats: SessionStats | null;
@@ -23,6 +24,7 @@ interface SessionState {
   isLoading: boolean;
   isConnecting: boolean;
   isDisconnecting: boolean;
+  isLoadingHistory: boolean;
   error: string | null;
   pagination: {
     page: number;
@@ -35,9 +37,11 @@ interface SessionState {
 interface SessionActions {
   fetchSessions: (query?: PaginationQuery) => Promise<void>;
   fetchActiveSessions: () => Promise<void>;
+  fetchSessionHistory: (query?: { limit?: number; offset?: number; status?: string }) => Promise<void>;
   fetchSession: (id: string) => Promise<Session>;
   connect: (data: ConnectSessionData) => Promise<SessionInfo>;
   disconnect: (id: string) => Promise<void>;
+  disconnectAll: () => Promise<number>;
   fetchStats: () => Promise<void>;
   setCurrentSession: (session: Session | null) => void;
   updateConnectionStep: (stepIndex: number, status: ConnectionStep['status']) => void;
@@ -59,6 +63,7 @@ const createInitialConnectionProgress = (): ConnectionProgress => ({
 const initialState: SessionState = {
   sessions: [],
   activeSessions: [],
+  sessionHistory: [],
   currentSession: null,
   sessionInfo: null,
   stats: null,
@@ -66,6 +71,7 @@ const initialState: SessionState = {
   isLoading: false,
   isConnecting: false,
   isDisconnecting: false,
+  isLoadingHistory: false,
   error: null,
   pagination: {
     page: 1,
@@ -107,6 +113,17 @@ export const useSessionStore = create<SessionStore>()((set, get) => ({
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch active sessions';
       set({ error: message, isLoading: false, activeSessions: [] });
+    }
+  },
+
+  fetchSessionHistory: async (query?: { limit?: number; offset?: number; status?: string }) => {
+    set({ isLoadingHistory: true, error: null });
+    try {
+      const sessions = await sessionService.getSessionHistory(query);
+      set({ sessionHistory: sessions, isLoadingHistory: false });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch session history';
+      set({ error: message, isLoadingHistory: false, sessionHistory: [] });
     }
   },
 
@@ -191,6 +208,24 @@ export const useSessionStore = create<SessionStore>()((set, get) => ({
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to disconnect';
+      set({ error: message, isDisconnecting: false });
+      throw error;
+    }
+  },
+
+  disconnectAll: async () => {
+    set({ isDisconnecting: true, error: null });
+    try {
+      const result = await sessionService.disconnectAll();
+      set((state) => ({
+        sessions: state.sessions.map((s) => ({ ...s, status: 'disconnected' as const, isActive: false })),
+        activeSessions: [],
+        sessionInfo: null,
+        isDisconnecting: false,
+      }));
+      return result.disconnectedCount;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to disconnect all sessions';
       set({ error: message, isDisconnecting: false });
       throw error;
     }

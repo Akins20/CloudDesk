@@ -58,6 +58,13 @@ router.get('/active', sessionController.getActiveSessions);
 router.get('/stats', sessionController.getStats);
 
 /**
+ * @route   GET /api/sessions/history
+ * @desc    Get all sessions including history
+ * @access  Private
+ */
+router.get('/history', sessionController.getSessionHistory);
+
+/**
  * @route   POST /api/sessions/disconnect-all
  * @desc    Disconnect all sessions
  * @access  Private

@@ -17,6 +17,27 @@ router.use(authenticate);
 router.get('/profile', userController.getProfile);
 
 /**
+ * @route   DELETE /api/users/account
+ * @desc    Delete current user account and all data
+ * @access  Private
+ */
+router.delete(
+  '/account',
+  validateBody(
+    Joi.object({
+      password: Joi.string().required().messages({
+        'any.required': 'Password is required to confirm deletion',
+      }),
+      confirmDelete: Joi.string().valid('DELETE').required().messages({
+        'any.only': 'Please type DELETE to confirm account deletion',
+        'any.required': 'Confirmation is required',
+      }),
+    })
+  ),
+  userController.deleteAccount
+);
+
+/**
  * @route   PUT /api/users/profile
  * @desc    Update current user profile
  * @access  Private

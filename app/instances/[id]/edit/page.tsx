@@ -33,7 +33,7 @@ export default function EditInstancePage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <InstanceForm mode="edit" instance={currentInstance} />
       </div>
     </DashboardLayout>

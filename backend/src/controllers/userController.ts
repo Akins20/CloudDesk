@@ -1,8 +1,12 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User';
+import { Instance } from '../models/Instance';
+import { Session } from '../models/Session';
+import { AuditLog } from '../models/AuditLog';
 import { asyncHandler, AuthRequest } from '../middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../config/constants';
-import { NotFoundError, ForbiddenError } from '../utils/errors';
+import { NotFoundError, ForbiddenError, UnauthorizedError } from '../utils/errors';
+import bcrypt from 'bcrypt';
 
 /**
  * Get user profile
@@ -182,10 +186,71 @@ export const updateUserStatus = asyncHandler(async (req: Request, res: Response)
   });
 });
 
+/**
+ * Delete user account (self-deletion)
+ * DELETE /api/users/account
+ */
+export const deleteAccount = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { userId } = (req as AuthRequest).user;
+  const { password, confirmDelete } = req.body;
+
+  // Require explicit confirmation
+  if (confirmDelete !== 'DELETE') {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      error: {
+        message: 'Please confirm deletion by typing DELETE',
+        code: 'CONFIRMATION_REQUIRED',
+      },
+    });
+    return;
+  }
+
+  // Get user with password field
+  const user = await User.findById(userId).select('+password');
+  if (!user) {
+    throw new NotFoundError('User not found', ERROR_CODES.USER_NOT_FOUND);
+  }
+
+  // Verify password
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    throw new UnauthorizedError('Invalid password', ERROR_CODES.INVALID_CREDENTIALS);
+  }
+
+  // Delete all user data
+  const deleteResults = await Promise.all([
+    // Delete all user's instances
+    Instance.deleteMany({ userId }),
+    // Delete all user's sessions
+    Session.deleteMany({ userId }),
+    // Delete audit logs (optional - keep for compliance)
+    AuditLog.deleteMany({ userId }),
+    // Finally delete the user
+    User.deleteOne({ _id: userId }),
+  ]);
+
+  const [instancesDeleted, sessionsDeleted, auditLogsDeleted, userDeleted] = deleteResults;
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: {
+      message: 'Account deleted successfully',
+      deleted: {
+        instances: instancesDeleted.deletedCount,
+        sessions: sessionsDeleted.deletedCount,
+        auditLogs: auditLogsDeleted.deletedCount,
+        user: userDeleted.deletedCount,
+      },
+    },
+  });
+});
+
 export default {
   getProfile,
   updateProfile,
   getAllUsers,
   getUserById,
   updateUserStatus,
+  deleteAccount,
 };

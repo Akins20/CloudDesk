@@ -205,8 +205,8 @@ export const api = {
   patch: <T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig) =>
     apiClient.patch<ApiResponse<T>>(url, data, config).then((res) => res.data),
 
-  delete: <T>(url: string, config?: InternalAxiosRequestConfig) =>
-    apiClient.delete<ApiResponse<T>>(url, config).then((res) => res.data),
+  delete: <T>(url: string, data?: unknown) =>
+    apiClient.delete<ApiResponse<T>>(url, { data } as InternalAxiosRequestConfig).then((res) => res.data),
 };
 
 export default apiClient;

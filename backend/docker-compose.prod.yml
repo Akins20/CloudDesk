@@ -1,4 +1,7 @@
-version: '3.8'
+# CloudDesk Production Docker Compose
+# Includes: API, Redis, MongoDB, Session Controller
+# Session workers are spawned dynamically by the controller
+# Note: Host NGINX handles SSL termination and proxies to port 3000
 
 services:
   # Redis for session state and pub/sub
@@ -6,11 +9,9 @@ services:
     image: redis:7-alpine
     container_name: clouddesk-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
     networks:
       - clouddesk-network
     healthcheck:
@@ -26,13 +27,11 @@ services:
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-clouddesk_secure_password}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
       MONGO_INITDB_DATABASE: clouddesk
     volumes:
       - mongodb_data:/data/db
       - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    ports:
-      - "27017:27017"
     networks:
       - clouddesk-network
     healthcheck:
@@ -42,13 +41,16 @@ services:
       retries: 5
       start_period: 30s
 
-  # CloudDesk Backend API
+  # CloudDesk Backend API (Stateless)
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: clouddesk-backend
     restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "6080-6180:6080-6180"  # VNC WebSocket proxy ports
     depends_on:
       mongodb:
         condition: service_healthy
@@ -57,25 +59,18 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      MONGODB_URI: mongodb://${MONGO_USERNAME:-clouddesk}:${MONGO_PASSWORD:-clouddesk_app_password}@mongodb:27017/clouddesk?authSource=clouddesk
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-clouddesk}:${MONGO_PASSWORD}@mongodb:27017/clouddesk?authSource=clouddesk
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-15m}
       JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      TUNNEL_PORT_RANGE_START: 6000
-      TUNNEL_PORT_RANGE_END: 7000
-      WEBSOCKET_PORT_RANGE_START: 6080
-      WEBSOCKET_PORT_RANGE_END: 6180
       SESSION_TIMEOUT_MINUTES: 30
       RATE_LIMIT_WINDOW_MS: 900000
       RATE_LIMIT_MAX_REQUESTS: 100
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://cloud-desk-tawny.vercel.app}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-    ports:
-      - "3000:3000"
-      - "6080-6180:6080-6180"  # WebSocket ports for VNC
     networks:
       - clouddesk-network
     healthcheck:
@@ -84,6 +79,31 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  # Session Controller (manages worker containers)
+  session-controller:
+    build:
+      context: ./session-controller
+      dockerfile: Dockerfile
+    container_name: clouddesk-session-controller
+    restart: unless-stopped
+    user: root  # Required for Docker socket access
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+      WORKER_IMAGE: clouddesk/session-worker:latest
+      DOCKER_NETWORK: clouddesk-network
+      PORT_RANGE_START: 8080
+      PORT_RANGE_END: 8180
+      HEARTBEAT_TIMEOUT: 60000
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+    volumes:
+      # Mount Docker socket for container management
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - clouddesk-network
 
 volumes:
   mongodb_data:
@@ -94,3 +114,5 @@ volumes:
 networks:
   clouddesk-network:
     driver: bridge
+    # Allow external containers (session workers) to join
+    attachable: true

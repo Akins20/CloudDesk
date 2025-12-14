@@ -1,0 +1,25 @@
+{
+  "name": "clouddesk-session-controller",
+  "version": "1.0.0",
+  "description": "CloudDesk session controller - manages session worker containers",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["clouddesk", "session", "controller", "docker"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dockerode": "^4.0.2",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.31",
+    "@types/node": "^25.0.1",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  }
+}

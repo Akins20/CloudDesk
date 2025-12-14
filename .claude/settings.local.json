@@ -12,7 +12,9 @@
       "Bash(git commit:*)",
       "Bash(git push)",
       "WebSearch",
-      "WebFetch(domain:freddyreyes.com)"
+      "WebFetch(domain:freddyreyes.com)",
+      "Bash(npm --version:*)",
+      "Bash(git push:*)"
     ]
   }
 }

@@ -25,6 +25,14 @@ export const API_ENDPOINTS = {
     CONNECT: '/api/sessions/connect',
     DISCONNECT: (id: string) => `/api/sessions/disconnect/${id}`,
     STATS: '/api/sessions/stats',
+    HISTORY: '/api/sessions/history',
+    ACTIVE: '/api/sessions/active',
+    DISCONNECT_ALL: '/api/sessions/disconnect-all',
+  },
+  // Users
+  USERS: {
+    PROFILE: '/api/users/profile',
+    DELETE_ACCOUNT: '/api/users/account',
   },
   // Health
   HEALTH: '/api/health',

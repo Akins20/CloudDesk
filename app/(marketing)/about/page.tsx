@@ -228,29 +228,38 @@ export default function AboutPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-foreground">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-background mb-6">
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-card via-card/50 to-background" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.05),transparent_50%)]" />
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-foreground/10 border border-foreground/20 mb-8">
+            <Shield className="w-4 h-4 text-foreground" />
+            <span className="text-sm text-foreground">Free during beta</span>
+          </div>
+
+          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
             Ready to Experience CloudDesk?
           </h2>
-          <p className="text-xl text-background/70 mb-10 max-w-2xl mx-auto">
-            Join our growing community of developers and teams who've simplified their cloud access.
+          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+            Join developers and teams who've simplified their cloud access. No credit card required.
           </p>
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/register">
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-background text-foreground hover:bg-background/90 text-lg px-8 py-6"
+                className="w-full sm:w-auto text-lg px-8 py-6 group"
               >
                 Get Started Free
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
             <Link href="/contact">
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto border-background/30 text-background hover:bg-background/10 text-lg px-8 py-6"
+                className="w-full sm:w-auto text-lg px-8 py-6"
               >
                 Contact Us
               </Button>

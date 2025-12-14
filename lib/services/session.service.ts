@@ -54,7 +54,34 @@ export const sessionService = {
   },
 
   async getActiveSessions(): Promise<Session[]> {
-    const sessions = await this.getSessions({ limit: 100 });
-    return sessions.filter((session) => session.status === 'connected' || session.status === 'connecting');
+    const response = await api.get<Session[]>(API_ENDPOINTS.SESSIONS.ACTIVE);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to fetch active sessions');
+  },
+
+  async getSessionHistory(query?: { limit?: number; offset?: number; status?: string }): Promise<Session[]> {
+    const params = new URLSearchParams();
+    if (query?.limit) params.append('limit', query.limit.toString());
+    if (query?.offset) params.append('offset', query.offset.toString());
+    if (query?.status) params.append('status', query.status);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+
+    const response = await api.get<Session[]>(`${API_ENDPOINTS.SESSIONS.HISTORY}${queryString}`);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to fetch session history');
+  },
+
+  async disconnectAll(): Promise<{ disconnectedCount: number }> {
+    const response = await api.post<{ message: string; disconnectedCount: number }>(
+      API_ENDPOINTS.SESSIONS.DISCONNECT_ALL
+    );
+    if (response.success && response.data) {
+      return { disconnectedCount: response.data.disconnectedCount };
+    }
+    throw new Error(response.error?.message || 'Failed to disconnect all sessions');
   },
 };

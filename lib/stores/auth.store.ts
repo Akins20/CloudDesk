@@ -5,7 +5,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { authService } from '@/lib/services';
 import { getAccessToken, clearTokens } from '@/lib/utils/helpers';
 import { STORAGE_KEYS } from '@/lib/utils/constants';
-import type { User, LoginData, RegisterData, ChangePasswordData } from '@/lib/types';
+import type { User, LoginData, RegisterData, ChangePasswordData, DeleteAccountData, DeleteAccountResponse } from '@/lib/types';
 
 interface AuthState {
   user: User | null;
@@ -21,6 +21,7 @@ interface AuthActions {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   changePassword: (data: ChangePasswordData) => Promise<void>;
+  deleteAccount: (data: DeleteAccountData) => Promise<DeleteAccountResponse>;
   clearError: () => void;
   setUser: (user: User | null) => void;
 }
@@ -114,6 +115,23 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: false });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Failed to change password';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      deleteAccount: async (data: DeleteAccountData) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await authService.deleteAccount(data);
+          clearTokens();
+          set({
+            ...initialState,
+            isInitialized: true,
+          });
+          return response;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to delete account';
           set({ error: message, isLoading: false });
           throw error;
         }

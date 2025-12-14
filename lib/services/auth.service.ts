@@ -7,6 +7,8 @@ import type {
   RegisterData,
   AuthResponse,
   ChangePasswordData,
+  DeleteAccountData,
+  DeleteAccountResponse,
 } from '@/lib/types';
 
 export const authService = {
@@ -59,5 +61,17 @@ export const authService = {
       return response.data;
     }
     throw new Error(response.error?.message || 'Failed to refresh token');
+  },
+
+  async deleteAccount(data: DeleteAccountData): Promise<DeleteAccountResponse> {
+    const response = await api.delete<DeleteAccountResponse>(
+      API_ENDPOINTS.USERS.DELETE_ACCOUNT,
+      data
+    );
+    if (response.success && response.data) {
+      clearTokens();
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to delete account');
   },
 };

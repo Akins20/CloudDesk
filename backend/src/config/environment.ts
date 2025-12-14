@@ -8,6 +8,7 @@ interface Environment {
   NODE_ENV: 'development' | 'production' | 'test';
   PORT: number;
   MONGODB_URI: string;
+  REDIS_URL: string;
   JWT_ACCESS_SECRET: string;
   JWT_REFRESH_SECRET: string;
   JWT_ACCESS_EXPIRY: string;
@@ -72,6 +73,7 @@ export function loadEnvironment(): Environment {
     NODE_ENV: validateNodeEnv(getEnvVariable('NODE_ENV', 'development')),
     PORT: getEnvNumber('PORT', 3000),
     MONGODB_URI: getEnvVariable('MONGODB_URI'),
+    REDIS_URL: getEnvVariable('REDIS_URL', 'redis://localhost:6379'),
     JWT_ACCESS_SECRET: getEnvVariable('JWT_ACCESS_SECRET'),
     JWT_REFRESH_SECRET: getEnvVariable('JWT_REFRESH_SECRET'),
     JWT_ACCESS_EXPIRY: getEnvVariable('JWT_ACCESS_EXPIRY', '15m'),

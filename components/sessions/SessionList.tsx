@@ -10,8 +10,16 @@ import type { Session, Instance } from '@/lib/types';
 
 export function SessionList() {
   const router = useRouter();
-  const { sessions, isLoading, pagination, fetchSessions, disconnect, isDisconnecting } =
-    useSessionStore();
+  const {
+    activeSessions,
+    sessionHistory,
+    isLoading,
+    isLoadingHistory,
+    pagination,
+    fetchSessionHistory,
+    disconnect,
+    isDisconnecting
+  } = useSessionStore();
 
   const handleDisconnect = async (sessionId: string) => {
     try {
@@ -24,7 +32,8 @@ export function SessionList() {
   };
 
   const handlePageChange = (page: number) => {
-    fetchSessions({ page });
+    const offset = (page - 1) * pagination.limit;
+    fetchSessionHistory({ limit: pagination.limit, offset });
   };
 
   const getInstanceInfo = (session: Session): { name: string; host: string } => {
@@ -38,13 +47,14 @@ export function SessionList() {
     };
   };
 
-  if (isLoading && (!sessions || sessions.length === 0)) {
+  if ((isLoading || isLoadingHistory) && activeSessions.length === 0 && sessionHistory.length === 0) {
     return <PageLoader message="Loading sessions..." />;
   }
 
-  const sessionList = sessions || [];
-  const activeSessions = sessionList.filter((s) => s.isActive);
-  const inactiveSessions = sessionList.filter((s) => !s.isActive);
+  // Filter past sessions (exclude active ones from history to avoid duplicates)
+  const activeIds = new Set(activeSessions.map((s) => s.id));
+  const pastSessions = sessionHistory.filter((s) => !activeIds.has(s.id) && !s.isActive);
+  const totalSessions = activeSessions.length + pastSessions.length;
 
   return (
     <div className="space-y-6">
@@ -52,12 +62,12 @@ export function SessionList() {
         <div>
           <h2 className="text-lg font-semibold text-foreground">Session History</h2>
           <p className="text-sm text-muted-foreground">
-            {activeSessions.length} active · {sessionList.length} total
+            {activeSessions.length} active · {totalSessions} total
           </p>
         </div>
       </div>
 
-      {sessionList.length === 0 ? (
+      {totalSessions === 0 ? (
         <div className="rounded-xl bg-card/50 border border-border/50 p-12">
           <EmptyState
             icon={<Activity className="w-8 h-8" />}
@@ -155,7 +165,7 @@ export function SessionList() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => router.push(ROUTES.DESKTOP(session.id))}
+                                onClick={() => router.push(`/desktop/${session.id}`)}
                               >
                                 <ExternalLink className="w-4 h-4 mr-1" />
                                 Open
@@ -182,7 +192,7 @@ export function SessionList() {
           )}
 
           {/* Past Sessions */}
-          {inactiveSessions.length > 0 && (
+          {pastSessions.length > 0 && (
             <div className="rounded-xl bg-card/50 border border-border/50 animate-panel-breathe overflow-hidden">
               <div className="p-4 border-b border-border/50">
                 <h3 className="text-sm font-medium text-foreground uppercase tracking-wider">
@@ -211,7 +221,7 @@ export function SessionList() {
                     </tr>
                   </thead>
                   <tbody>
-                    {inactiveSessions.map((session) => {
+                    {pastSessions.map((session) => {
                       const instanceInfo = getInstanceInfo(session);
                       return (
                         <tr

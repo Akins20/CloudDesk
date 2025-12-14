@@ -33,13 +33,13 @@ const features = [
   },
   {
     icon: Shield,
-    title: 'Secure SSH Tunnels',
-    description: 'Encrypted SSH connections protect your data in transit. Your credentials are stored securely.',
+    title: 'Encrypted Credentials',
+    description: 'Your SSH keys are encrypted at rest. Plaintext credentials only exist briefly in memory during active sessions.',
   },
   {
     icon: Zap,
-    title: 'Fast Connection',
-    description: 'Optimized WebSocket connections for responsive remote desktop streaming.',
+    title: 'Isolated Sessions',
+    description: 'Each connection runs in its own secure container. Your sessions are completely isolated from other users.',
   },
   {
     icon: Globe,
@@ -53,25 +53,26 @@ const features = [
   },
   {
     icon: Lock,
-    title: 'Your Cloud, Your Data',
-    description: 'BYOC model means your data stays in YOUR cloud account. We never store your files.',
+    title: 'Your Data, Your Control',
+    description: 'BYOC model means your data stays in YOUR cloud. Delete your account anytime and everything goes with it.',
   },
 ];
 
 const stats = [
-  { value: 'Beta', label: 'Free Access', icon: CheckCircle2 },
-  { value: 'SSH', label: 'Encrypted Tunnel', icon: Shield },
-  { value: 'XFCE', label: 'Desktop Environment', icon: Zap },
-  { value: '24/7', label: 'Always Available', icon: Clock },
+  { value: 'Encrypted', label: 'Credentials at Rest', icon: Shield },
+  { value: 'Isolated', label: 'Session Containers', icon: Server },
+  { value: 'Secure', label: 'Tunnel Protected', icon: Lock },
+  { value: 'Free', label: 'While in Beta', icon: CheckCircle2 },
 ];
 
 const comparisonFeatures = [
   { feature: 'Browser-based access', clouddesk: true, workspaces: true, guacamole: true },
+  { feature: 'Encrypted credential storage', clouddesk: true, workspaces: true, guacamole: false },
   { feature: 'Use your own cloud instances', clouddesk: true, workspaces: false, guacamole: true },
   { feature: 'Auto-provision VNC/Desktop', clouddesk: true, workspaces: true, guacamole: false },
+  { feature: 'Isolated session containers', clouddesk: true, workspaces: true, guacamole: false },
   { feature: 'No server setup required', clouddesk: true, workspaces: true, guacamole: false },
   { feature: 'Multi-cloud support', clouddesk: true, workspaces: false, guacamole: true },
-  { feature: 'Pay only for your cloud costs', clouddesk: true, workspaces: false, guacamole: true },
   { feature: 'Starting price', clouddesk: 'Free', workspaces: '$21/mo', guacamole: 'Free*' },
 ];
 
@@ -104,8 +105,12 @@ const faqs = [
     a: "No! CloudDesk automatically provisions VNC and a desktop environment (XFCE) on your Linux instances when you first connect. It's completely hands-off.",
   },
   {
-    q: "Is my data secure?",
-    a: "Absolutely. All connections use encrypted SSH tunnels. Your credentials are encrypted with AES-256. We never have access to your server data — it stays entirely in your cloud account.",
+    q: "How secure is CloudDesk?",
+    a: "We take security seriously. Your SSH keys are encrypted at rest. During active sessions, credentials are decrypted only within isolated containers and exist solely in memory — never written to disk. Each session is completely isolated, all traffic flows through encrypted tunnels, and credentials are destroyed when sessions end.",
+  },
+  {
+    q: "Can CloudDesk see my SSH credentials?",
+    a: "Your credentials are encrypted at rest and only decrypted in isolated containers during active sessions. Plaintext credentials exist only in memory while you're connected and are destroyed when your session ends. They are never written to disk.",
   },
   {
     q: "What's the difference between CloudDesk and Amazon WorkSpaces?",
@@ -232,15 +237,15 @@ export function LandingPage() {
             <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-muted-foreground animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                <span className="text-sm">SSH Encrypted</span>
+                <span className="text-sm">Encrypted Credentials</span>
               </div>
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4" />
-                <span className="text-sm">Secure Connections</span>
+                <span className="text-sm">Isolated Sessions</span>
               </div>
               <div className="flex items-center gap-2">
                 <Server className="w-4 h-4" />
-                <span className="text-sm">BYOC Architecture</span>
+                <span className="text-sm">Your Cloud, Your Rules</span>
               </div>
             </div>
           </div>
@@ -451,8 +456,131 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Security Section */}
+      <section id="security" className="py-24 bg-card/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <span className="inline-block px-4 py-1 rounded-full bg-background border border-border text-sm text-muted-foreground mb-4">
+              Security First
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">
+              Your Credentials, Protected
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Encrypted at rest, decrypted only in isolated containers during active sessions, then destroyed.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left side - Security features */}
+            <div className="space-y-6">
+              <div className="flex gap-4 p-6 rounded-xl bg-card/50 border border-border hover:border-foreground/30 transition-all duration-300">
+                <div className="w-12 h-12 rounded-lg bg-foreground/10 flex items-center justify-center flex-shrink-0">
+                  <Lock className="w-6 h-6 text-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Encrypted at Rest</h3>
+                  <p className="text-muted-foreground text-sm">Your SSH keys and passwords are encrypted before being stored. They're never saved as plaintext in our database.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 p-6 rounded-xl bg-card/50 border border-border hover:border-foreground/30 transition-all duration-300">
+                <div className="w-12 h-12 rounded-lg bg-foreground/10 flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-6 h-6 text-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Isolated Sessions</h3>
+                  <p className="text-muted-foreground text-sm">Every VNC session runs in its own isolated container. Your session is completely separated from other users on the platform.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 p-6 rounded-xl bg-card/50 border border-border hover:border-foreground/30 transition-all duration-300">
+                <div className="w-12 h-12 rounded-lg bg-foreground/10 flex items-center justify-center flex-shrink-0">
+                  <Server className="w-6 h-6 text-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Secure Tunnels</h3>
+                  <p className="text-muted-foreground text-sm">All VNC traffic is routed through encrypted tunnels. Your remote desktop stream never travels unprotected.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - Visual representation */}
+            <div className="rounded-xl border border-border bg-card/50 p-8">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-status-success/10 mb-4">
+                  <Shield className="w-8 h-8 text-status-success" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground">How We Protect Your Credentials</h3>
+              </div>
+
+              {/* Flow diagram */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-background/50 border border-border">
+                  <div className="w-10 h-10 rounded-full bg-foreground/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg font-medium text-foreground">1</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">You enter your SSH key</p>
+                    <p className="text-xs text-muted-foreground">In your browser, locally</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                </div>
+
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-background/50 border border-border">
+                  <div className="w-10 h-10 rounded-full bg-foreground/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg font-medium text-foreground">2</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">Encrypted before storage</p>
+                    <p className="text-xs text-muted-foreground">Strong encryption at rest</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                </div>
+
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-background/50 border border-border">
+                  <div className="w-10 h-10 rounded-full bg-foreground/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg font-medium text-foreground">3</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">Encrypted storage</p>
+                    <p className="text-xs text-muted-foreground">Never stored as plaintext</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                </div>
+
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-background/50 border border-border">
+                  <div className="w-10 h-10 rounded-full bg-foreground/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg font-medium text-foreground">4</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground text-sm">Decrypted only in isolated containers</p>
+                    <p className="text-xs text-muted-foreground">Destroyed when session ends</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 rounded-lg bg-status-success/5 border border-status-success/20">
+                <p className="text-sm text-center text-status-success">
+                  Credentials never touch disk in plaintext — in-memory only during sessions
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Use Cases Section */}
-      <section className="py-24">
+      <section className="py-24 bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             id="usecases-header"
@@ -462,7 +590,7 @@ export function LandingPage() {
               isVisible['usecases-header'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
             )}
           >
-            <span className="inline-block px-4 py-1 rounded-full bg-card border border-border text-sm text-muted-foreground mb-4">
+            <span className="inline-block px-4 py-1 rounded-full bg-background border border-border text-sm text-muted-foreground mb-4">
               Use Cases
             </span>
             <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">
@@ -649,35 +777,70 @@ export function LandingPage() {
       </section>
 
       {/* Final CTA Section */}
-      <section className="py-24 bg-foreground relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.1)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <section className="py-24 relative overflow-hidden">
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-card via-background to-card" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+        {/* Glow effects */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-foreground/5 rounded-full blur-3xl" />
+
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold text-background mb-6">
-            Ready to Simplify Cloud Access?
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-border mb-8">
+            <Shield className="w-4 h-4 text-status-success" />
+            <span className="text-sm text-foreground">Secure by Design</span>
+          </div>
+
+          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
+            Ready to Take Control?
           </h2>
-          <p className="text-xl text-background/70 mb-10 max-w-2xl mx-auto">
-            Join developers and teams who've ditched complex VPNs and expensive DaaS for CloudDesk's elegant simplicity.
+          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+            Your cloud. Your credentials. Your way. Join developers who trust CloudDesk with their remote access.
           </p>
+
+          {/* Features mini-list */}
+          <div className="flex flex-wrap items-center justify-center gap-6 mb-10 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-status-success" />
+              <span>Encrypted credentials</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-status-success" />
+              <span>Isolated sessions</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-status-success" />
+              <span>No credit card required</span>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href={ROUTES.REGISTER}>
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-background text-foreground hover:bg-background/90 text-lg px-8 py-6 group"
+                className="w-full sm:w-auto text-lg px-8 py-6 group"
               >
                 Get Started Free
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link href="/about">
+            <Link href="#security">
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto border-background/30 text-background hover:bg-background/10 text-lg px-8 py-6"
+                className="w-full sm:w-auto text-lg px-8 py-6"
               >
-                Learn More About Us
+                <Shield className="w-5 h-5 mr-2" />
+                Learn About Security
               </Button>
             </Link>
           </div>
+
+          {/* Trust note */}
+          <p className="mt-8 text-xs text-muted-foreground">
+            Free during beta. Your data is encrypted and you can delete your account anytime.
+          </p>
         </div>
       </section>
 

@@ -422,6 +422,34 @@ class SessionService {
   }
 
   /**
+   * Get session history (all sessions including disconnected)
+   */
+  async getSessionHistory(
+    userId: string,
+    limit: number = 50,
+    offset: number = 0,
+    status?: string
+  ): Promise<ISessionDocument[]> {
+    const query: Record<string, unknown> = { userId };
+
+    if (status) {
+      if (status === 'active') {
+        query.status = { $in: ['connecting', 'connected'] };
+      } else if (status === 'inactive') {
+        query.status = { $in: ['disconnected', 'error'] };
+      } else {
+        query.status = status;
+      }
+    }
+
+    return Session.find(query)
+      .populate('instanceId', 'name host provider')
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit);
+  }
+
+  /**
    * Log audit action
    */
   private async logAuditAction(
