@@ -59,6 +59,7 @@ class SessionService {
   async connectToInstance(
     userId: string,
     instanceId: string,
+    userPassword: string,
     desktopEnvironment: DesktopEnvironment = 'xfce',
     ipAddress?: string,
     userAgent?: string
@@ -97,8 +98,8 @@ class SessionService {
         username: instance.username,
       };
 
-      // Get decrypted credential
-      const credential = instance.getDecryptedCredential();
+      // Get fully decrypted credential (server-side + client-side decryption)
+      const credential = instance.getFullyDecryptedCredential(userPassword);
       if (instance.authType === 'key') {
         sshConfig.privateKey = credential;
       } else {

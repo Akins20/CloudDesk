@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Plus, Play, Clock, Server } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Plus, Play, Clock, Server, Lock, Shield } from 'lucide-react';
+import { Button, Input, Modal } from '@/components/ui';
 import { Instance } from '@/lib/types';
 import { useSessionStore, toast } from '@/lib/stores';
 import { formatRelativeTime } from '@/lib/utils/helpers';
@@ -17,16 +17,43 @@ export function QuickActionsPanel({ recentInstances }: QuickActionsPanelProps) {
   const router = useRouter();
   const { connect } = useSessionStore();
   const [connectingId, setConnectingId] = useState<string | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
+  const [connectPassword, setConnectPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
-  const handleConnect = async (instanceId: string) => {
-    setConnectingId(instanceId);
+  const handleConnectClick = (instanceId: string) => {
+    setSelectedInstanceId(instanceId);
+    setConnectPassword('');
+    setPasswordError('');
+    setShowPasswordModal(true);
+  };
+
+  const handleConnect = async () => {
+    if (!selectedInstanceId || !connectPassword) {
+      setPasswordError('Password is required');
+      return;
+    }
+
+    setConnectingId(selectedInstanceId);
+    setPasswordError('');
     try {
-      const session = await connect({ instanceId });
+      const session = await connect({
+        instanceId: selectedInstanceId,
+        password: connectPassword,
+      });
       toast.success(SUCCESS_MESSAGES.CONNECTION_SUCCESS);
+      setShowPasswordModal(false);
+      setConnectPassword('');
       router.push(`${ROUTES.DESKTOP}/${session.sessionId}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : ERROR_MESSAGES.CONNECTION_FAILED;
-      toast.error(message);
+      if (message.toLowerCase().includes('decrypt') || message.toLowerCase().includes('password')) {
+        setPasswordError('Incorrect password');
+      } else {
+        toast.error(message);
+        setShowPasswordModal(false);
+      }
     } finally {
       setConnectingId(null);
     }
@@ -88,7 +115,7 @@ export function QuickActionsPanel({ recentInstances }: QuickActionsPanelProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleConnect(instance.id)}
+                    onClick={() => handleConnectClick(instance.id)}
                     disabled={connectingId === instance.id}
                     className={`opacity-0 group-hover:opacity-100 transition-opacity ${
                       instance.status === 'active'
@@ -113,6 +140,63 @@ export function QuickActionsPanel({ recentInstances }: QuickActionsPanelProps) {
           </div>
         )}
       </div>
+
+      {/* Password Modal */}
+      <Modal
+        isOpen={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setConnectPassword('');
+          setPasswordError('');
+        }}
+        title="Enter Password"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+            <Shield className="w-5 h-5 text-status-info flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground">
+              Enter your account password to decrypt credentials and connect.
+            </p>
+          </div>
+
+          <Input
+            type="password"
+            placeholder="Account password"
+            value={connectPassword}
+            onChange={(e) => {
+              setConnectPassword(e.target.value);
+              setPasswordError('');
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleConnect();
+            }}
+            leftIcon={<Lock className="w-4 h-4" />}
+            error={passwordError}
+            autoFocus
+          />
+
+          <div className="flex gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowPasswordModal(false);
+                setConnectPassword('');
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConnect}
+              disabled={connectingId !== null || !connectPassword}
+              className="flex-1"
+            >
+              {connectingId ? 'Connecting...' : 'Connect'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

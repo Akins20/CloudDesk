@@ -24,6 +24,7 @@ export interface Session {
 export interface ConnectSessionData {
   instanceId: string;
   desktopEnvironment?: DesktopEnvironment;
+  password: string; // User's account password for decrypting credentials
 }
 
 export interface SessionInfo {

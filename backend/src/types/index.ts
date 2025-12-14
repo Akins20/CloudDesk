@@ -68,6 +68,7 @@ export interface UpdateInstanceDTO {
 export interface ConnectSessionDTO {
   instanceId: string;
   desktopEnvironment?: 'xfce' | 'lxde';
+  password: string; // User's account password for decrypting credentials
 }
 
 export interface SessionInfo {

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Monitor, CheckCircle, Loader2, XCircle } from 'lucide-react';
-import { Modal, Button, Select } from '@/components/ui';
+import { Monitor, CheckCircle, Loader2, XCircle, Lock, Shield } from 'lucide-react';
+import { Modal, Button, Select, Input } from '@/components/ui';
 import { useSessionStore, toast } from '@/lib/stores';
 import { ROUTES, DESKTOP_ENVIRONMENTS, SUCCESS_MESSAGES } from '@/lib/utils/constants';
 import { cn } from '@/lib/utils/helpers';
@@ -25,11 +25,15 @@ export function ConnectModal({
   const router = useRouter();
   const { connect, connectionProgress, isConnecting, resetConnectionProgress } = useSessionStore();
   const [desktopEnvironment, setDesktopEnvironment] = useState<DesktopEnvironment>(initialDesktopEnvironment);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [isStarted, setIsStarted] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       setIsStarted(false);
+      setPassword('');
+      setPasswordError('');
       resetConnectionProgress();
     }
   }, [isOpen, resetConnectionProgress]);
@@ -37,18 +41,30 @@ export function ConnectModal({
   const handleConnect = async () => {
     if (!instanceId) return;
 
+    if (!password) {
+      setPasswordError('Password is required to decrypt credentials');
+      return;
+    }
+
     setIsStarted(true);
+    setPasswordError('');
     try {
       const sessionInfo = await connect({
         instanceId,
         desktopEnvironment,
+        password,
       });
       toast.success(SUCCESS_MESSAGES.CONNECTION_SUCCESS);
       onClose();
       router.push(ROUTES.DESKTOP(sessionInfo.sessionId));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Connection failed';
-      toast.error(message);
+      if (message.toLowerCase().includes('decrypt') || message.toLowerCase().includes('password')) {
+        setPasswordError('Incorrect password. Please try again.');
+        setIsStarted(false);
+      } else {
+        toast.error(message);
+      }
     }
   };
 
@@ -85,23 +101,46 @@ export function ConnectModal({
             <div>
               <p className="font-medium text-foreground">Remote Desktop Connection</p>
               <p className="text-sm text-muted-foreground">
-                Select your preferred desktop environment and connect
+                Enter your password and select desktop environment
               </p>
             </div>
           </div>
 
-          <Select
-            label="Desktop Environment"
-            options={desktopOptions}
-            value={desktopEnvironment}
-            onChange={(e) => setDesktopEnvironment(e.target.value as DesktopEnvironment)}
-          />
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-status-info/5 border border-status-info/20">
+              <Shield className="w-5 h-5 text-status-info flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground">
+                Your credentials are encrypted with your account password. Enter your password to decrypt and connect securely.
+              </p>
+            </div>
+
+            <Input
+              type="password"
+              label="Account Password"
+              placeholder="Enter your account password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordError('');
+              }}
+              leftIcon={<Lock className="w-4 h-4" />}
+              error={passwordError}
+              autoFocus
+            />
+
+            <Select
+              label="Desktop Environment"
+              options={desktopOptions}
+              value={desktopEnvironment}
+              onChange={(e) => setDesktopEnvironment(e.target.value as DesktopEnvironment)}
+            />
+          </div>
 
           <div className="flex justify-end gap-3 mt-6">
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleConnect}>
+            <Button onClick={handleConnect} disabled={!password}>
               Connect
             </Button>
           </div>

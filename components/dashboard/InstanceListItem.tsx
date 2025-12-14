@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronUp, Play, Settings, Trash2, X, Save } from 'lucide-react';
+import { ChevronDown, ChevronUp, Play, Settings, Trash2, X, Save, Lock, Shield } from 'lucide-react';
 import { Instance, UpdateInstanceData } from '@/lib/types';
 import { Button, Input, Modal } from '@/components/ui';
 import { InstanceExpandedDetails } from './InstanceExpandedDetails';
@@ -38,6 +38,9 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [connectPassword, setConnectPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const { connect } = useSessionStore();
   const { deleteInstance, updateInstance } = useInstanceStore();
@@ -56,15 +59,37 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
 
   const status = statusConfig[instance.status as keyof typeof statusConfig] || statusConfig.inactive;
 
+  const handleConnectClick = () => {
+    setConnectPassword('');
+    setPasswordError('');
+    setShowPasswordModal(true);
+  };
+
   const handleConnect = async () => {
+    if (!connectPassword) {
+      setPasswordError('Password is required to decrypt credentials');
+      return;
+    }
+
     setIsConnecting(true);
+    setPasswordError('');
     try {
-      const session = await connect({ instanceId: instance.id });
+      const session = await connect({
+        instanceId: instance.id,
+        password: connectPassword,
+      });
       toast.success(SUCCESS_MESSAGES.CONNECTION_SUCCESS);
+      setShowPasswordModal(false);
+      setConnectPassword('');
       router.push(`${ROUTES.DESKTOP}/${session.sessionId}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : ERROR_MESSAGES.CONNECTION_FAILED;
-      toast.error(message);
+      if (message.toLowerCase().includes('decrypt') || message.toLowerCase().includes('password')) {
+        setPasswordError('Incorrect password. Please try again.');
+      } else {
+        toast.error(message);
+        setShowPasswordModal(false);
+      }
     } finally {
       setIsConnecting(false);
     }
@@ -176,7 +201,7 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                handleConnect();
+                handleConnectClick();
               }}
               disabled={isConnecting}
               className={`${
@@ -333,6 +358,82 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
                 <>
                   <Save className="w-4 h-4 mr-2" />
                   Save Changes
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Password Modal for Connect */}
+      <Modal
+        isOpen={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setConnectPassword('');
+          setPasswordError('');
+        }}
+        title="Enter Password to Connect"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+            <Shield className="w-5 h-5 text-status-info flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Secure Connection</p>
+              <p className="mt-1">
+                Your credentials are encrypted with your account password. Enter your password to decrypt and connect.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">
+              Account Password
+            </label>
+            <Input
+              type="password"
+              placeholder="Enter your account password"
+              value={connectPassword}
+              onChange={(e) => {
+                setConnectPassword(e.target.value);
+                setPasswordError('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleConnect();
+                }
+              }}
+              leftIcon={<Lock className="w-4 h-4" />}
+              error={passwordError}
+              autoFocus
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setShowPasswordModal(false);
+                setConnectPassword('');
+                setPasswordError('');
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConnect}
+              disabled={isConnecting || !connectPassword}
+              className="flex-1"
+            >
+              {isConnecting ? (
+                <>Connecting...</>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Connect
                 </>
               )}
             </Button>

@@ -2,6 +2,12 @@ import crypto from 'crypto';
 import { encryptionConfig } from '../config/encryption';
 import { logger } from '../utils/logger';
 
+// Constants for client-side decryption (matching frontend encryption)
+const PBKDF2_ITERATIONS = 100000;
+const SALT_LENGTH = 16;
+const IV_LENGTH_GCM = 12;
+const KEY_LENGTH_BITS = 256;
+
 class EncryptionService {
   private readonly algorithm: string;
   private readonly ivLength: number;
@@ -48,7 +54,7 @@ class EncryptionService {
   }
 
   /**
-   * Decrypt ciphertext using AES-256-CBC
+   * Decrypt ciphertext using AES-256-CBC (server-side encryption)
    * Expects base64 encoded string in format: iv:ciphertext
    */
   decrypt(ciphertext: string): string {
@@ -79,6 +85,61 @@ class EncryptionService {
       logger.error('Decryption failed:', error);
       throw new Error('Failed to decrypt data');
     }
+  }
+
+  /**
+   * Decrypt client-side encrypted data using user's password
+   * Mirrors the frontend encryptWithPassword function
+   * Format: base64 encoded (salt + iv + ciphertext + authTag)
+   */
+  decryptWithPassword(encryptedData: string, password: string): string {
+    try {
+      // Decode from base64
+      const combined = Buffer.from(encryptedData, 'base64');
+
+      // Extract salt, iv, and ciphertext+authTag
+      const salt = combined.subarray(0, SALT_LENGTH);
+      const iv = combined.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH_GCM);
+      const ciphertextWithTag = combined.subarray(SALT_LENGTH + IV_LENGTH_GCM);
+
+      // AES-GCM auth tag is 16 bytes at the end
+      const authTagLength = 16;
+      const ciphertext = ciphertextWithTag.subarray(0, ciphertextWithTag.length - authTagLength);
+      const authTag = ciphertextWithTag.subarray(ciphertextWithTag.length - authTagLength);
+
+      // Derive key from password using PBKDF2
+      const key = crypto.pbkdf2Sync(
+        password,
+        salt,
+        PBKDF2_ITERATIONS,
+        KEY_LENGTH_BITS / 8,
+        'sha256'
+      );
+
+      // Create decipher with AES-256-GCM
+      const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+      decipher.setAuthTag(authTag);
+
+      // Decrypt
+      let decrypted = decipher.update(ciphertext);
+      decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+      return decrypted.toString('utf8');
+    } catch (error) {
+      logger.error('Client-side decryption failed:', error);
+      throw new Error('Failed to decrypt with password - incorrect password or corrupted data');
+    }
+  }
+
+  /**
+   * Full decryption: Server-side first, then client-side with password
+   */
+  decryptCredential(encryptedCredential: string, userPassword: string): string {
+    // First, decrypt the server-side encryption layer
+    const clientEncrypted = this.decrypt(encryptedCredential);
+
+    // Then, decrypt the client-side encryption layer with user's password
+    return this.decryptWithPassword(clientEncrypted, userPassword);
   }
 
   /**

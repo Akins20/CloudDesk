@@ -14,9 +14,21 @@ export const connect = asyncHandler(async (req: Request, res: Response): Promise
   const ipAddress = getClientIp(req);
   const userAgent = getUserAgent(req);
 
+  if (!data.password) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      error: {
+        message: 'Password is required to decrypt credentials',
+        code: 'PASSWORD_REQUIRED',
+      },
+    });
+    return;
+  }
+
   const sessionInfo = await sessionService.connectToInstance(
     userId,
     data.instanceId,
+    data.password,
     data.desktopEnvironment || 'xfce',
     ipAddress,
     userAgent

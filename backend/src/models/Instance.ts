@@ -34,6 +34,7 @@ export interface IInstance {
 export interface IInstanceDocument extends IInstance, Document {
   _id: mongoose.Types.ObjectId;
   getDecryptedCredential(): string;
+  getFullyDecryptedCredential(userPassword: string): string;
   setCredential(credential: string): void;
   markConnected(): Promise<void>;
 }
@@ -148,10 +149,16 @@ instanceSchema.index({ tags: 1 });
 instanceSchema.index({ status: 1 });
 instanceSchema.index({ createdAt: -1 });
 
-// Instance method to decrypt credential
+// Instance method to decrypt credential (server-side only)
 instanceSchema.methods.getDecryptedCredential = function (): string {
   const instance = this as IInstanceDocument;
   return encryptionService.decrypt(instance.encryptedCredential);
+};
+
+// Instance method to fully decrypt credential (server-side + client-side with user password)
+instanceSchema.methods.getFullyDecryptedCredential = function (userPassword: string): string {
+  const instance = this as IInstanceDocument;
+  return encryptionService.decryptCredential(instance.encryptedCredential, userPassword);
 };
 
 // Instance method to set encrypted credential
