@@ -14,7 +14,6 @@ import {
   Terminal,
   Check,
   Play,
-  Star,
   Users,
   Clock,
   DollarSign,
@@ -34,18 +33,18 @@ const features = [
   },
   {
     icon: Shield,
-    title: 'Military-Grade Security',
-    description: 'End-to-end encrypted SSH tunnels with AES-256 encryption. Your credentials never leave your control.',
+    title: 'Secure SSH Tunnels',
+    description: 'Encrypted SSH connections protect your data in transit. Your credentials are stored securely.',
   },
   {
     icon: Zap,
-    title: 'Sub-50ms Latency',
-    description: 'Optimized WebSocket connections and adaptive streaming for a native desktop experience.',
+    title: 'Fast Connection',
+    description: 'Optimized WebSocket connections for responsive remote desktop streaming.',
   },
   {
     icon: Globe,
-    title: 'Multi-Cloud Ready',
-    description: 'AWS, Google Cloud, Azure, DigitalOcean, Oracle — connect any SSH-accessible server.',
+    title: 'Any Linux Server',
+    description: 'Works with any Linux server via SSH. Tested with AWS EC2 and Oracle Cloud (OCI).',
   },
   {
     icon: Server,
@@ -60,9 +59,9 @@ const features = [
 ];
 
 const stats = [
-  { value: '99.9%', label: 'Uptime SLA', icon: CheckCircle2 },
-  { value: '<50ms', label: 'Avg Latency', icon: Zap },
-  { value: '256-bit', label: 'AES Encryption', icon: Shield },
+  { value: 'Beta', label: 'Free Access', icon: CheckCircle2 },
+  { value: 'SSH', label: 'Encrypted Tunnel', icon: Shield },
+  { value: 'XFCE', label: 'Desktop Environment', icon: Zap },
   { value: '24/7', label: 'Always Available', icon: Clock },
 ];
 
@@ -76,31 +75,29 @@ const comparisonFeatures = [
   { feature: 'Starting price', clouddesk: 'Free', workspaces: '$21/mo', guacamole: 'Free*' },
 ];
 
-const testimonials = [
+// Example use cases - what CloudDesk enables
+const useCaseExamples = [
   {
-    quote: "CloudDesk replaced our expensive Citrix setup. We're saving thousands monthly while getting better performance.",
-    author: "Sarah Chen",
-    role: "CTO, TechStartup Inc",
-    avatar: "SC",
+    quote: "Access EC2 dev environments from any browser - no local setup required.",
+    useCase: "Remote Development",
+    icon: "💻",
   },
   {
-    quote: "Finally, a way to access my EC2 dev environments from my iPad. The browser-based approach is genius.",
-    author: "Marcus Johnson",
-    role: "Senior Developer",
-    avatar: "MJ",
+    quote: "Connect to Oracle Cloud instances for testing and administration.",
+    useCase: "Cloud Administration",
+    icon: "☁️",
   },
   {
-    quote: "Setup took 2 minutes. I added my Oracle Cloud instance and was connected instantly. Incredible.",
-    author: "Priya Patel",
-    role: "DevOps Engineer",
-    avatar: "PP",
+    quote: "Quick setup: add your instance details and connect in seconds.",
+    useCase: "Fast Onboarding",
+    icon: "⚡",
   },
 ];
 
 const faqs = [
   {
     q: "What cloud providers are supported?",
-    a: "CloudDesk works with any cloud provider that offers SSH access — AWS EC2, Google Cloud, Azure VMs, DigitalOcean Droplets, Oracle Cloud, Linode, Vultr, and any VPS or dedicated server.",
+    a: "CloudDesk works with any Linux server that has SSH access. We've tested and verified it with AWS EC2 and Oracle Cloud Infrastructure (OCI), but it should work with any provider offering Linux instances.",
   },
   {
     q: "Do I need to install anything on my server?",
@@ -210,7 +207,7 @@ export function LandingPage() {
 
             {/* Subheadline */}
             <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-              Access your EC2, GCP, and Azure instances through a
+              Access your AWS EC2 and Oracle Cloud instances through a
               <span className="text-foreground font-medium"> secure, browser-based </span>
               remote desktop. No client software. No VPN. No hassle.
             </p>
@@ -235,11 +232,11 @@ export function LandingPage() {
             <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-muted-foreground animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                <span className="text-sm">SOC 2 Compliant</span>
+                <span className="text-sm">SSH Encrypted</span>
               </div>
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4" />
-                <span className="text-sm">End-to-End Encrypted</span>
+                <span className="text-sm">Secure Connections</span>
               </div>
               <div className="flex items-center gap-2">
                 <Server className="w-4 h-4" />
@@ -294,8 +291,8 @@ export function LandingPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[
                     { name: 'prod-api-server', status: 'connected', provider: 'AWS EC2' },
-                    { name: 'dev-environment', status: 'available', provider: 'GCP' },
-                    { name: 'staging-db', status: 'available', provider: 'Azure' },
+                    { name: 'dev-environment', status: 'available', provider: 'Oracle Cloud' },
+                    { name: 'staging-server', status: 'available', provider: 'AWS EC2' },
                   ].map((instance, i) => (
                     <div
                       key={instance.name}
@@ -327,14 +324,15 @@ export function LandingPage() {
       {/* Logo Cloud / Social Proof */}
       <section className="py-12 border-y border-border bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-muted-foreground mb-8">Works with your favorite cloud providers</p>
-          <div className="flex flex-wrap items-center justify-center gap-12 opacity-60">
-            {['AWS', 'Google Cloud', 'Azure', 'DigitalOcean', 'Oracle', 'Linode'].map((provider) => (
-              <div key={provider} className="text-lg font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-default">
+          <p className="text-center text-sm text-muted-foreground mb-8">Currently verified with these cloud providers</p>
+          <div className="flex flex-wrap items-center justify-center gap-12">
+            {['AWS EC2', 'Oracle Cloud (OCI)'].map((provider) => (
+              <div key={provider} className="text-lg font-semibold text-foreground">
                 {provider}
               </div>
             ))}
           </div>
+          <p className="text-center text-xs text-muted-foreground mt-4">More providers coming soon</p>
         </div>
       </section>
 
@@ -569,7 +567,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Use Cases Section - What You Can Do */}
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
@@ -581,34 +579,22 @@ export function LandingPage() {
             )}
           >
             <span className="inline-block px-4 py-1 rounded-full bg-card border border-border text-sm text-muted-foreground mb-4">
-              Testimonials
+              What You Can Do
             </span>
             <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">
-              Loved by Developers
+              Simple & Effective
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, idx) => (
+            {useCaseExamples.map((example, idx) => (
               <div
-                key={testimonial.author}
+                key={example.useCase}
                 className="p-6 rounded-xl bg-card/50 border border-border hover:border-foreground/30 transition-all duration-300"
               >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-foreground text-foreground" />
-                  ))}
-                </div>
-                <p className="text-foreground mb-6 italic">"{testimonial.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center font-semibold text-sm">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">{testimonial.author}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </div>
+                <div className="text-4xl mb-4">{example.icon}</div>
+                <p className="text-foreground mb-4">{example.quote}</p>
+                <p className="text-sm font-medium text-muted-foreground">{example.useCase}</p>
               </div>
             ))}
           </div>

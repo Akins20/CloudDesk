@@ -98,23 +98,23 @@ export default function AboutPage() {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="text-center p-6 rounded-lg bg-background/50 border border-border">
                     <Globe className="w-8 h-8 mx-auto mb-3 text-foreground" />
-                    <p className="text-3xl font-bold text-foreground">50+</p>
-                    <p className="text-sm text-muted-foreground">Countries Served</p>
+                    <p className="text-3xl font-bold text-foreground">2</p>
+                    <p className="text-sm text-muted-foreground">Verified Providers</p>
                   </div>
                   <div className="text-center p-6 rounded-lg bg-background/50 border border-border">
                     <Users className="w-8 h-8 mx-auto mb-3 text-foreground" />
-                    <p className="text-3xl font-bold text-foreground">1,000+</p>
-                    <p className="text-sm text-muted-foreground">Beta Users</p>
+                    <p className="text-3xl font-bold text-foreground">Beta</p>
+                    <p className="text-sm text-muted-foreground">Currently Free</p>
                   </div>
                   <div className="text-center p-6 rounded-lg bg-background/50 border border-border">
                     <Zap className="w-8 h-8 mx-auto mb-3 text-foreground" />
-                    <p className="text-3xl font-bold text-foreground">99.9%</p>
-                    <p className="text-sm text-muted-foreground">Uptime</p>
+                    <p className="text-3xl font-bold text-foreground">SSH</p>
+                    <p className="text-sm text-muted-foreground">Encrypted Tunnels</p>
                   </div>
                   <div className="text-center p-6 rounded-lg bg-background/50 border border-border">
                     <Shield className="w-8 h-8 mx-auto mb-3 text-foreground" />
-                    <p className="text-3xl font-bold text-foreground">0</p>
-                    <p className="text-sm text-muted-foreground">Data Breaches</p>
+                    <p className="text-3xl font-bold text-foreground">BYOC</p>
+                    <p className="text-sm text-muted-foreground">Your Data, Your Cloud</p>
                   </div>
                 </div>
               </div>
