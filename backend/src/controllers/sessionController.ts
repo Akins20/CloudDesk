@@ -3,6 +3,7 @@ import { sessionService } from '../services/sessionService';
 import { asyncHandler, AuthRequest, getClientIp, getUserAgent } from '../middleware';
 import { HTTP_STATUS } from '../config/constants';
 import { ConnectSessionDTO } from '../types';
+import { logger } from '../utils/logger';
 
 /**
  * Connect to an instance (create session)
@@ -13,6 +14,13 @@ export const connect = asyncHandler(async (req: Request, res: Response): Promise
   const data: ConnectSessionDTO = req.body;
   const ipAddress = getClientIp(req);
   const userAgent = getUserAgent(req);
+
+  // Debug logging
+  logger.info('Connect request received', {
+    body: req.body,
+    hasPassword: !!data.password,
+    instanceId: data.instanceId,
+  });
 
   if (!data.password) {
     res.status(HTTP_STATUS.BAD_REQUEST).json({

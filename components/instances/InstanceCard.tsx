@@ -200,7 +200,7 @@ export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => router.push(ROUTES.DESKTOP(activeSession.id))}
+              onClick={() => window.open(ROUTES.DESKTOP(activeSession.id), '_blank')}
             >
               Open Desktop
             </Button>

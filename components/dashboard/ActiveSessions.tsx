@@ -82,7 +82,7 @@ export function ActiveSessions() {
                     size="sm"
                     variant="outline"
                     leftIcon={<ExternalLink className="w-4 h-4" />}
-                    onClick={() => router.push(ROUTES.DESKTOP(session.id))}
+                    onClick={() => window.open(ROUTES.DESKTOP(session.id), '_blank')}
                   >
                     Open
                   </Button>

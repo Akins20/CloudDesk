@@ -242,6 +242,12 @@ export const connectSessionSchema = Joi.object({
     .messages({
       'any.only': `Desktop environment must be one of: ${DESKTOP_ENVIRONMENTS.join(', ')}`,
     }),
+  password: Joi.string()
+    .required()
+    .messages({
+      'any.required': 'Password is required to decrypt credentials',
+      'string.empty': 'Password cannot be empty',
+    }),
 });
 
 // Param Schemas

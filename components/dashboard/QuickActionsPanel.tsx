@@ -45,7 +45,7 @@ export function QuickActionsPanel({ recentInstances }: QuickActionsPanelProps) {
       toast.success(SUCCESS_MESSAGES.CONNECTION_SUCCESS);
       setShowPasswordModal(false);
       setConnectPassword('');
-      router.push(`${ROUTES.DESKTOP}/${session.sessionId}`);
+      window.open(ROUTES.DESKTOP(session.sessionId), '_blank');
     } catch (error) {
       const message = error instanceof Error ? error.message : ERROR_MESSAGES.CONNECTION_FAILED;
       if (message.toLowerCase().includes('decrypt') || message.toLowerCase().includes('password')) {

@@ -56,7 +56,7 @@ export function ConnectModal({
       });
       toast.success(SUCCESS_MESSAGES.CONNECTION_SUCCESS);
       onClose();
-      router.push(ROUTES.DESKTOP(sessionInfo.sessionId));
+      window.open(ROUTES.DESKTOP(sessionInfo.sessionId), '_blank');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Connection failed';
       if (message.toLowerCase().includes('decrypt') || message.toLowerCase().includes('password')) {

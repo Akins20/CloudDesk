@@ -70,7 +70,7 @@ export function ActiveSessionIndicator({ sessions }: ActiveSessionIndicatorProps
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => router.push(`${ROUTES.DESKTOP}/${session.id}`)}
+                  onClick={() => window.open(ROUTES.DESKTOP(session.id), '_blank')}
                   className="text-status-success hover:bg-status-success/10"
                 >
                   <ExternalLink className="w-4 h-4" />
