@@ -8,18 +8,30 @@ import {
   XCircle,
   RefreshCw,
   Keyboard,
+  Users,
 } from 'lucide-react';
-import { Button, Spinner, Card } from '@/components/ui';
+import { Button, Spinner, Card, Badge } from '@/components/ui';
+import { ShareSession } from './ShareSession';
 import { useSessionStore, toast } from '@/lib/stores';
 import { ROUTES, SUCCESS_MESSAGES, API_BASE_URL } from '@/lib/utils/constants';
 import { cn, getAccessToken } from '@/lib/utils/helpers';
+import { api } from '@/lib/api';
 
 interface VNCViewerProps {
   sessionId: string;
   websocketUrl: string;
+  isOwner?: boolean;
 }
 
-export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
+interface Viewer {
+  odId: string;
+  name?: string;
+  permissions: 'view' | 'control';
+  joinedAt: Date;
+  isOwner: boolean;
+}
+
+export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewerProps) {
   const router = useRouter();
   const { disconnect } = useSessionStore();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -29,6 +41,8 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
   const [error, setError] = useState<string | null>(null);
   const [showToolbar, setShowToolbar] = useState(true);
   const [vncUrl, setVncUrl] = useState<string | null>(null);
+  const [viewers, setViewers] = useState<Viewer[]>([]);
+  const [viewerCount, setViewerCount] = useState(0);
 
   // Build VNC URL on mount
   useEffect(() => {
@@ -48,6 +62,31 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
     setVncUrl(iframeUrl);
   }, [websocketUrl, sessionId]);
 
+  // Fetch initial viewer count
+  useEffect(() => {
+    const fetchViewers = async () => {
+      try {
+        const response = await api.get<{
+          viewerCount: number;
+          viewers: Viewer[];
+        }>(`/api/sessions/${sessionId}/viewers`);
+        if (response.success && response.data) {
+          setViewerCount(response.data.viewerCount);
+          setViewers(response.data.viewers);
+        }
+      } catch (error) {
+        console.error('Failed to fetch viewers:', error);
+      }
+    };
+
+    if (isConnected) {
+      fetchViewers();
+      // Poll for viewer updates every 10 seconds
+      const interval = setInterval(fetchViewers, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [sessionId, isConnected]);
+
   // Listen for messages from iframe
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -65,6 +104,10 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
       } else if (event.data.type === 'vnc-error') {
         setError(event.data.error);
         setIsConnecting(false);
+      } else if (event.data.type === 'viewers_update') {
+        // Handle viewer updates from WebSocket
+        setViewerCount(event.data.count || 0);
+        setViewers(event.data.viewers || []);
       }
     };
 
@@ -187,19 +230,33 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
         )}
       >
         <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                'w-2 h-2 rounded-full',
-                isConnected ? 'bg-status-success animate-pulse' : 'bg-status-warning'
-              )}
-            />
-            <span className="text-sm text-foreground">
-              {isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div
+                className={cn(
+                  'w-2 h-2 rounded-full',
+                  isConnected ? 'bg-status-success animate-pulse' : 'bg-status-warning'
+                )}
+              />
+              <span className="text-sm text-foreground">
+                {isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
+              </span>
+            </div>
+
+            {/* Viewer indicator */}
+            {viewerCount > 0 && (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md" title={`${viewerCount} viewer(s) connected`}>
+                <Users className="w-3.5 h-3.5 text-status-success" />
+                <span className="text-xs text-foreground font-medium">{viewerCount}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Share button - only for owner */}
+            {isOwner && (
+              <ShareSession sessionId={sessionId} isOwner={isOwner} />
+            )}
             <Button
               variant="ghost"
               size="sm"
