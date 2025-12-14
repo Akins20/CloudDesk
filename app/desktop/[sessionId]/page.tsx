@@ -70,9 +70,12 @@ export default function DesktopPage() {
   // Construct websocket URL from session data
   const websocketUrl = sessionInfo?.websocketUrl || `/vnc?sessionId=${sessionId}`;
 
+  // Check if current user is the session owner (default to true for backwards compatibility)
+  const isOwner = currentSession?.isOwner !== false;
+
   return (
     <div className="h-screen bg-black">
-      <VNCViewer sessionId={sessionId} websocketUrl={websocketUrl} />
+      <VNCViewer sessionId={sessionId} websocketUrl={websocketUrl} isOwner={isOwner} />
     </div>
   );
 }

@@ -244,12 +244,11 @@ sessionInviteSchema.statics.cleanupExpired = async function (): Promise<number> 
 };
 
 // Pre-save middleware to auto-expire
-sessionInviteSchema.pre('save', function (next) {
+sessionInviteSchema.pre('save', function () {
   // Auto-expire if past expiration date
   if (this.status === 'pending' && this.expiresAt && new Date() > this.expiresAt) {
     this.status = 'expired';
   }
-  next();
 });
 
 export const SessionInvite = mongoose.model<ISessionInviteDocument, ISessionInviteModel>(

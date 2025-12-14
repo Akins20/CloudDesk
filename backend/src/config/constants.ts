@@ -4,7 +4,7 @@
 export const VNC_CONSTANTS = {
   DEFAULT_DISPLAY_NUMBER: 1,
   BASE_PORT: 5900, // VNC base port (display :1 = 5901, :2 = 5902, etc.)
-  MAX_DISPLAYS: 10,
+  MAX_DISPLAYS: 50, // Maximum concurrent VNC sessions per server
   DEFAULT_GEOMETRY: '1920x1080',
   DEFAULT_DEPTH: 24,
   PASSWORD_LENGTH: 8,

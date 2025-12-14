@@ -165,6 +165,14 @@ class TunnelService {
   }
 
   /**
+   * Get SSH client for a tunnel (used for VNC cleanup during disconnect)
+   */
+  getSSHClient(localPort: number): Client | null {
+    const tunnel = this.activeTunnels.get(localPort);
+    return tunnel ? tunnel.sshClient : null;
+  }
+
+  /**
    * Get tunnel by session ID
    */
   getTunnelBySession(sessionId: string): TunnelInfo | null {

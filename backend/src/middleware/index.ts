@@ -27,5 +27,6 @@ export {
   sessionLimiter,
   strictLimiter,
   userLimiter,
+  inviteLimiter,
   createRateLimiter,
 } from './rateLimiter';

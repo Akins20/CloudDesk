@@ -37,8 +37,6 @@ export class SessionBridge {
   private tunnelPort: number;
   private ownerId: string;
   private isConnected: boolean = false;
-  private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number = 3;
 
   constructor(options: SessionBridgeOptions) {
     this.sessionId = options.sessionId;
@@ -60,7 +58,6 @@ export class SessionBridge {
       this.tcpSocket.on('connect', () => {
         logger.info(`[SessionBridge] TCP connection established for session ${this.sessionId}`);
         this.isConnected = true;
-        this.reconnectAttempts = 0;
         resolve();
       });
 
@@ -88,7 +85,7 @@ export class SessionBridge {
    */
   private handleTcpClose(): void {
     // Close all WebSocket connections
-    for (const [viewerId, viewer] of this.viewers) {
+    for (const [_viewerId, viewer] of this.viewers) {
       if (viewer.ws.readyState === WebSocket.OPEN) {
         viewer.ws.close(1000, 'VNC connection closed');
       }
@@ -192,25 +189,14 @@ export class SessionBridge {
 
   /**
    * Broadcast viewer list update to all connected clients
+   * NOTE: Disabled for now as sending JSON over VNC WebSocket breaks noVNC
+   * The frontend polls /api/sessions/:sessionId/viewers instead
    */
   private broadcastViewerUpdate(): void {
-    const viewerList = this.getViewerList();
-    const message = JSON.stringify({
-      type: 'viewers_update',
-      viewers: viewerList,
-      count: viewerList.length,
-    });
-
-    for (const [, viewer] of this.viewers) {
-      if (viewer.ws.readyState === WebSocket.OPEN) {
-        try {
-          // Send as text message (not binary VNC data)
-          viewer.ws.send(message);
-        } catch (error) {
-          logger.warn('[SessionBridge] Failed to send viewer update:', error);
-        }
-      }
-    }
+    // Don't send JSON over VNC WebSocket - it breaks the RFB protocol
+    // The noVNC client expects only binary VNC data
+    // Viewer updates are fetched via HTTP polling instead
+    logger.debug(`[SessionBridge] Viewer count updated: ${this.viewers.size}`);
   }
 
   /**
@@ -385,7 +371,7 @@ export class SessionBridgeManager {
    * Close all bridges
    */
   closeAll(): void {
-    for (const [sessionId, bridge] of this.bridges) {
+    for (const [_sessionId, bridge] of this.bridges) {
       bridge.close();
     }
     this.bridges.clear();

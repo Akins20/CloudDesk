@@ -97,6 +97,15 @@ export const userLimiter = createRateLimiter({
   },
 });
 
+/**
+ * Generous rate limiter for invite/collaboration endpoints
+ */
+export const inviteLimiter = createRateLimiter({
+  windowMs: 60000, // 1 minute
+  max: 60, // 60 requests per minute
+  message: 'Too many requests, please try again shortly',
+});
+
 export default {
   createRateLimiter,
   apiLimiter,
@@ -104,4 +113,5 @@ export default {
   sessionLimiter,
   strictLimiter,
   userLimiter,
+  inviteLimiter,
 };

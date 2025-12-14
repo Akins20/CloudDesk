@@ -138,6 +138,18 @@ export const getSession = asyncHandler(async (req: Request, res: Response): Prom
     : null;
   const duration = durationMs !== null ? Math.floor(durationMs / 1000) : null;
 
+  // Determine if current user is the session owner
+  const isOwner = session.userId.toString() === userId;
+
+  // Get viewer permissions if user is a viewer
+  let permissions: 'view' | 'control' | undefined;
+  if (!isOwner) {
+    const viewer = session.activeViewers?.find(
+      (v) => v.userId.toString() === userId
+    );
+    permissions = viewer?.permissions;
+  }
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: {
@@ -156,6 +168,8 @@ export const getSession = asyncHandler(async (req: Request, res: Response): Prom
       updatedAt: session.updatedAt,
       isActive,
       duration,
+      isOwner,
+      permissions,
     },
   });
 });

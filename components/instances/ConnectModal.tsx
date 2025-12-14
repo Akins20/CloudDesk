@@ -137,10 +137,10 @@ export function ConnectModal({
           </div>
 
           <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} disabled={isConnecting}>
               Cancel
             </Button>
-            <Button onClick={handleConnect} disabled={!password}>
+            <Button onClick={handleConnect} disabled={!password || isConnecting} isLoading={isConnecting}>
               Connect
             </Button>
           </div>

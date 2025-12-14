@@ -132,11 +132,47 @@ Monochrome palette with glassy effects:
 5. Heartbeat monitoring for session health
 6. Cleanup on disconnect or timeout
 
-## Backend Server
-- Production URL: https://api.freddyreyes.com (18.209.65.32)
-- SSH credentials in `backend/Backend_Server_Credentials.txt`
-- SSH key: `backend/CloudDesk.pem`
-- Working directory: `~/clouddesk`
+## Backend Server Deployment
+
+### Server Credentials
+- **SSH Key**: `backend/CloudDesk.pem`
+- **IP Address**: 18.209.65.32
+- **Username**: ubuntu
+- **Working Directory**: `~/clouddesk`
+- **Credentials File**: `backend/Backend_Server_Credentials.txt`
+
+### Deploy Backend Changes
+After making backend changes, deploy to the server (runs in Docker):
+
+```bash
+# 1. Build locally first to verify no TypeScript errors
+cd backend && npm run build
+
+# 2. SCP the backend source code to the server
+scp -i backend/CloudDesk.pem -r backend/src ubuntu@18.209.65.32:~/clouddesk/
+
+# 3. SSH into the server and rebuild Docker container
+ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32 "cd ~/clouddesk && docker compose up -d --build backend"
+```
+
+### Quick Deployment Commands (from project root)
+```bash
+# Deploy and rebuild (one-liner)
+scp -i backend/CloudDesk.pem -r backend/src ubuntu@18.209.65.32:~/clouddesk/ && ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32 "cd ~/clouddesk && docker compose up -d --build backend"
+
+# SSH into server
+ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32
+
+# Check backend logs
+ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32 "docker logs clouddesk-backend --tail 50"
+
+# Check all container status
+ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32 "cd ~/clouddesk && docker compose ps"
+```
+
+### Server URLs
+- Production API: https://18.209.65.32 (SSL via Nginx)
+- Health Check: https://18.209.65.32/api/health
 
 ## Key Files
 

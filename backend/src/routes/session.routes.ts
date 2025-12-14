@@ -5,6 +5,7 @@ import {
   validateBody,
   validateParams,
   sessionLimiter,
+  inviteLimiter,
 } from '../middleware';
 import { connectSessionSchema, sessionIdParamSchema } from '../utils/validators';
 
@@ -94,7 +95,7 @@ router.post(
 );
 
 // ============================================
-// Collaboration & Invite Routes
+// Collaboration & Invite Routes (with generous rate limiting)
 // ============================================
 
 /**
@@ -102,14 +103,14 @@ router.post(
  * @desc    Join a session via invite token
  * @access  Private
  */
-router.post('/join/:inviteToken', inviteController.joinSession);
+router.post('/join/:inviteToken', inviteLimiter, inviteController.joinSession);
 
 /**
  * @route   GET /api/sessions/invite-info/:inviteToken
  * @desc    Get session info for an invite (without joining)
  * @access  Private
  */
-router.get('/invite-info/:inviteToken', inviteController.getInviteInfo);
+router.get('/invite-info/:inviteToken', inviteLimiter, inviteController.getInviteInfo);
 
 /**
  * @route   POST /api/sessions/:sessionId/invite

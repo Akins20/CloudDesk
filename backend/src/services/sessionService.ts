@@ -263,7 +263,12 @@ class SessionService {
     }
 
     try {
-      // Close tunnel
+      // Kill VNC server via SSH before closing tunnel (tunnel has the SSH client)
+      if (session.vncDisplayNumber) {
+        await this.killVNCViaSSH(session.sshTunnelLocalPort, session.vncDisplayNumber);
+      }
+
+      // Close tunnel (this also ends the SSH connection)
       await tunnelService.closeTunnel(session.sshTunnelLocalPort);
 
       // Update session status
@@ -292,6 +297,38 @@ class SessionService {
   }
 
   /**
+   * Kill a VNC display via SSH using the tunnel's SSH connection
+   * Used for cleanup when sessions are disconnected
+   */
+  private async killVNCViaSSH(tunnelPort: number, displayNumber: number): Promise<void> {
+    try {
+      // Validate display number to prevent command injection
+      const validDisplay = Math.floor(Math.abs(displayNumber));
+      if (validDisplay < 1 || validDisplay > 99) {
+        logger.warn('Invalid VNC display number for cleanup:', displayNumber);
+        return;
+      }
+
+      // Get the SSH client from the tunnel
+      const sshClient = tunnelService.getSSHClient(tunnelPort);
+      if (!sshClient) {
+        logger.warn('No SSH client available for VNC cleanup', { tunnelPort, displayNumber });
+        return;
+      }
+
+      logger.info(`Killing VNC display :${validDisplay} via SSH`);
+      await vncService.stopVNCServer(sshClient, validDisplay);
+      logger.info(`VNC display :${validDisplay} killed successfully`);
+    } catch (error) {
+      // Log but don't throw - VNC cleanup failure shouldn't break disconnect
+      logger.warn('Failed to kill VNC display:', {
+        displayNumber,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
    * Get active sessions for a user
    */
   async getActiveSessions(userId: string): Promise<ISessionDocument[]> {
@@ -300,6 +337,7 @@ class SessionService {
 
   /**
    * Get session by ID
+   * Returns session if user is owner OR an invited viewer
    */
   async getSessionById(
     userId: string,
@@ -307,7 +345,10 @@ class SessionService {
   ): Promise<ISessionDocument | null> {
     return Session.findOne({
       _id: sessionId,
-      userId,
+      $or: [
+        { userId }, // Owner
+        { 'activeViewers.userId': userId }, // Invited viewer
+      ],
     }).populate('instanceId', 'name host provider');
   }
 
