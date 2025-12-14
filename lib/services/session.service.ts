@@ -39,10 +39,14 @@ export const sessionService = {
   },
 
   async disconnect(id: string): Promise<void> {
+    console.log('[SessionService] disconnect called with id:', id);
+    console.log('[SessionService] API endpoint:', API_ENDPOINTS.SESSIONS.DISCONNECT(id));
     const response = await api.post<void>(API_ENDPOINTS.SESSIONS.DISCONNECT(id));
+    console.log('[SessionService] API response:', response);
     if (!response.success) {
       throw new Error(response.error?.message || 'Failed to disconnect session');
     }
+    console.log('[SessionService] disconnect completed successfully');
   },
 
   async getStats(): Promise<SessionStats> {

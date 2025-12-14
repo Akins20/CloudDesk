@@ -58,7 +58,11 @@ export const disconnect = asyncHandler(async (req: Request, res: Response): Prom
   const ipAddress = getClientIp(req);
   const userAgent = getUserAgent(req);
 
+  logger.info('Disconnect request received', { userId, sessionId });
+
   await sessionService.disconnectSession(userId, sessionId, ipAddress, userAgent);
+
+  logger.info('Disconnect completed successfully', { sessionId });
 
   res.status(HTTP_STATUS.OK).json({
     success: true,

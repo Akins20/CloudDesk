@@ -241,10 +241,18 @@ class SessionService {
     ipAddress?: string,
     userAgent?: string
   ): Promise<void> {
+    logger.info('Disconnect session requested', { userId, sessionId });
+
     const session = await Session.findOne({
       _id: sessionId,
       userId,
     }).populate('instanceId', 'name');
+
+    logger.info('Session lookup result', {
+      found: !!session,
+      sessionId,
+      status: session?.status,
+    });
 
     if (!session) {
       throw new NotFoundError('Session not found', ERROR_CODES.SESSION_NOT_FOUND);

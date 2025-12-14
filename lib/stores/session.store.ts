@@ -191,9 +191,12 @@ export const useSessionStore = create<SessionStore>()((set, get) => ({
   },
 
   disconnect: async (id: string) => {
+    console.log('[SessionStore] disconnect called with id:', id);
     set({ isDisconnecting: true, error: null });
     try {
+      console.log('[SessionStore] Calling sessionService.disconnect...');
       await sessionService.disconnect(id);
+      console.log('[SessionStore] sessionService.disconnect completed');
       set((state) => ({
         sessions: state.sessions.map((s) =>
           s.id === id ? { ...s, status: 'disconnected' as const, isActive: false } : s
@@ -206,7 +209,9 @@ export const useSessionStore = create<SessionStore>()((set, get) => ({
         sessionInfo: null,
         isDisconnecting: false,
       }));
+      console.log('[SessionStore] State updated after disconnect');
     } catch (error) {
+      console.error('[SessionStore] disconnect error:', error);
       const message = error instanceof Error ? error.message : 'Failed to disconnect';
       set({ error: message, isDisconnecting: false });
       throw error;

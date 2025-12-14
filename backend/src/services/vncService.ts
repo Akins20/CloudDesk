@@ -318,6 +318,7 @@ exec startlxde`,
       // Start VNC server with:
       // - localhost only (-localhost yes) - CRITICAL for security, only accept connections via SSH tunnel
       // - SecurityTypes None - Authentication is handled by SSH tunnel + JWT WebSocket auth
+      // - AlwaysShared - Allow multiple simultaneous connections for collaborative sessions
       // - Specified geometry and depth
       //
       // Security Model:
@@ -332,6 +333,7 @@ exec startlxde`,
         `-depth ${validatedDepth}`,
         '-localhost yes',  // CRITICAL: Only accept connections from localhost (via SSH tunnel)
         '-SecurityTypes None',  // Auth handled by SSH tunnel + JWT
+        '-AlwaysShared',  // Allow multiple simultaneous viewers for collaboration
         '2>&1'
       ].join(' ');
 

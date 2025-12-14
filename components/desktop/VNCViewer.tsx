@@ -73,16 +73,21 @@ export function VNCViewer({ sessionId, websocketUrl }: VNCViewerProps) {
   }, []);
 
   const handleDisconnect = useCallback(async () => {
+    console.log('Disconnect button clicked, sessionId:', sessionId);
     try {
       // Disconnect VNC in iframe
       if (iframeRef.current?.contentWindow) {
         const rfb = (iframeRef.current.contentWindow as any).vncRFB;
+        console.log('RFB instance:', rfb);
         if (rfb) rfb.disconnect();
       }
+      console.log('Calling session store disconnect...');
       await disconnect(sessionId);
+      console.log('Disconnect completed successfully');
       toast.success(SUCCESS_MESSAGES.DISCONNECTION_SUCCESS);
       router.push(ROUTES.DASHBOARD);
     } catch (error) {
+      console.error('Disconnect error:', error);
       const message = error instanceof Error ? error.message : 'Failed to disconnect';
       toast.error(message);
     }
