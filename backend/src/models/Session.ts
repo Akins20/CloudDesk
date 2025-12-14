@@ -1,6 +1,14 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
 import { SESSION_STATUSES, SessionStatus } from '../config/constants';
 
+export type ViewerPermission = 'view' | 'control';
+
+export interface ISessionViewer {
+  userId: mongoose.Types.ObjectId;
+  joinedAt: Date;
+  permissions: ViewerPermission;
+}
+
 export interface ISession {
   userId: mongoose.Types.ObjectId;
   instanceId: mongoose.Types.ObjectId;
@@ -13,6 +21,10 @@ export interface ISession {
   connectionStartedAt?: Date;
   connectionEndedAt?: Date;
   lastActivityAt: Date;
+  // Collaboration fields
+  isCollaborative: boolean;
+  activeViewers: ISessionViewer[];
+  maxViewers: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +33,11 @@ export interface ISessionDocument extends ISession, Document {
   _id: mongoose.Types.ObjectId;
   updateActivity(): Promise<void>;
   disconnect(errorMessage?: string): Promise<void>;
+  enableCollaboration(): Promise<void>;
+  disableCollaboration(): Promise<void>;
+  addViewer(userId: string, permissions: ViewerPermission): Promise<void>;
+  removeViewer(userId: string): Promise<void>;
+  getViewerCount(): number;
   isActive: boolean;
   duration: number | null;
 }
@@ -89,6 +106,33 @@ const sessionSchema = new Schema<ISessionDocument>(
       default: Date.now,
       index: true,
     },
+    // Collaboration fields
+    isCollaborative: {
+      type: Boolean,
+      default: false,
+    },
+    activeViewers: [{
+      userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      joinedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      permissions: {
+        type: String,
+        enum: ['view', 'control'],
+        default: 'view',
+      },
+    }],
+    maxViewers: {
+      type: Number,
+      default: 10, // Maximum 10 concurrent viewers per session
+      min: 1,
+      max: 50,
+    },
   },
   {
     timestamps: true,
@@ -151,7 +195,66 @@ sessionSchema.methods.disconnect = async function (errorMessage?: string): Promi
   if (errorMessage) {
     session.errorMessage = errorMessage;
   }
+  // Clear active viewers on disconnect
+  session.activeViewers = [];
   await session.save();
+};
+
+// Instance method to enable collaboration
+sessionSchema.methods.enableCollaboration = async function (): Promise<void> {
+  const session = this as ISessionDocument;
+  session.isCollaborative = true;
+  await session.save();
+};
+
+// Instance method to disable collaboration
+sessionSchema.methods.disableCollaboration = async function (): Promise<void> {
+  const session = this as ISessionDocument;
+  session.isCollaborative = false;
+  session.activeViewers = [];
+  await session.save();
+};
+
+// Instance method to add a viewer
+sessionSchema.methods.addViewer = async function (
+  userId: string,
+  permissions: ViewerPermission
+): Promise<void> {
+  const session = this as ISessionDocument;
+
+  // Check if viewer already exists
+  const existingIndex = session.activeViewers.findIndex(
+    (v) => v.userId.toString() === userId
+  );
+
+  if (existingIndex >= 0) {
+    // Update existing viewer's permissions
+    session.activeViewers[existingIndex].permissions = permissions;
+  } else {
+    // Add new viewer
+    session.activeViewers.push({
+      userId: new mongoose.Types.ObjectId(userId),
+      joinedAt: new Date(),
+      permissions,
+    });
+  }
+
+  await session.save();
+};
+
+// Instance method to remove a viewer
+sessionSchema.methods.removeViewer = async function (userId: string): Promise<void> {
+  const session = this as ISessionDocument;
+  session.activeViewers = session.activeViewers.filter(
+    (v) => v.userId.toString() !== userId
+  );
+  await session.save();
+};
+
+// Instance method to get viewer count
+sessionSchema.methods.getViewerCount = function (): number {
+  const session = this as ISessionDocument;
+  return session.activeViewers.length;
 };
 
 // Static method to find active sessions for a user

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { sessionController } from '../controllers';
+import { sessionController, inviteController } from '../controllers';
 import {
   authenticate,
   validateBody,
@@ -91,6 +91,101 @@ router.post(
   '/:sessionId/activity',
   validateParams(sessionIdParamSchema),
   sessionController.updateActivity
+);
+
+// ============================================
+// Collaboration & Invite Routes
+// ============================================
+
+/**
+ * @route   POST /api/sessions/join/:inviteToken
+ * @desc    Join a session via invite token
+ * @access  Private
+ */
+router.post('/join/:inviteToken', inviteController.joinSession);
+
+/**
+ * @route   GET /api/sessions/invite-info/:inviteToken
+ * @desc    Get session info for an invite (without joining)
+ * @access  Private
+ */
+router.get('/invite-info/:inviteToken', inviteController.getInviteInfo);
+
+/**
+ * @route   POST /api/sessions/:sessionId/invite
+ * @desc    Create a session invitation
+ * @access  Private (session owner only)
+ */
+router.post(
+  '/:sessionId/invite',
+  validateParams(sessionIdParamSchema),
+  inviteController.createInvite
+);
+
+/**
+ * @route   GET /api/sessions/:sessionId/invites
+ * @desc    List active invitations for a session
+ * @access  Private (session owner only)
+ */
+router.get(
+  '/:sessionId/invites',
+  validateParams(sessionIdParamSchema),
+  inviteController.listInvites
+);
+
+/**
+ * @route   DELETE /api/sessions/:sessionId/invite/:inviteId
+ * @desc    Revoke an invitation
+ * @access  Private (session owner only)
+ */
+router.delete(
+  '/:sessionId/invite/:inviteId',
+  validateParams(sessionIdParamSchema),
+  inviteController.revokeInvite
+);
+
+/**
+ * @route   GET /api/sessions/:sessionId/viewers
+ * @desc    Get active viewers for a session
+ * @access  Private (owner or viewer)
+ */
+router.get(
+  '/:sessionId/viewers',
+  validateParams(sessionIdParamSchema),
+  inviteController.getViewers
+);
+
+/**
+ * @route   POST /api/sessions/:sessionId/collaboration
+ * @desc    Toggle collaboration mode on/off
+ * @access  Private (session owner only)
+ */
+router.post(
+  '/:sessionId/collaboration',
+  validateParams(sessionIdParamSchema),
+  inviteController.toggleCollaboration
+);
+
+/**
+ * @route   DELETE /api/sessions/:sessionId/viewers/:viewerId
+ * @desc    Kick a viewer from session
+ * @access  Private (session owner only)
+ */
+router.delete(
+  '/:sessionId/viewers/:viewerId',
+  validateParams(sessionIdParamSchema),
+  inviteController.kickViewer
+);
+
+/**
+ * @route   PATCH /api/sessions/:sessionId/viewers/:viewerId
+ * @desc    Update viewer permissions
+ * @access  Private (session owner only)
+ */
+router.patch(
+  '/:sessionId/viewers/:viewerId',
+  validateParams(sessionIdParamSchema),
+  inviteController.updateViewerPermissions
 );
 
 export default router;

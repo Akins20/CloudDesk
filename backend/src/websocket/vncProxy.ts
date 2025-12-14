@@ -1,11 +1,11 @@
 import http from 'http';
-import net from 'net';
 import { URL } from 'url';
 import WebSocket, { WebSocketServer } from 'ws';
 import { Session } from '../models/Session';
 import { authService } from '../services/authService';
 import { tunnelService } from '../services/tunnelService';
 import { connectionManager } from './connectionManager';
+import { sessionBridgeManager, ViewerPermission } from './SessionBridge';
 import { logger } from '../utils/logger';
 import { WSConnectionInfo } from '../types';
 
@@ -16,7 +16,6 @@ interface VNCProxyOptions {
 
 class VNCProxy {
   private wss: WebSocketServer;
-  private tcpConnections: Map<string, net.Socket> = new Map();
 
   constructor(options: VNCProxyOptions) {
     const { server, path = '/vnc' } = options;
@@ -82,6 +81,7 @@ class VNCProxy {
     req: http.IncomingMessage
   ): Promise<void> {
     let sessionId: string | null = null;
+    let userId: string | null = null;
 
     try {
       const url = new URL(req.url || '', `http://${req.headers.host}`);
@@ -95,18 +95,38 @@ class VNCProxy {
 
       // Verify token and get user info
       const payload = authService.verifyAccessToken(token);
-      const userId = payload.userId;
+      userId = payload.userId;
 
-      // Get session from database
+      // Get session from database - allow owner OR invited viewer
       const session = await Session.findOne({
         _id: sessionId,
-        userId,
         status: { $in: ['connecting', 'connected'] },
+        $or: [
+          { userId }, // Owner
+          { 'activeViewers.userId': userId }, // Invited viewer
+        ],
       });
 
       if (!session) {
-        ws.close(1008, 'Session not found or not active');
+        ws.close(1008, 'Session not found, not active, or access denied');
         return;
+      }
+
+      // Determine if user is owner or viewer
+      const isOwner = session.userId.toString() === userId;
+      let permissions: ViewerPermission = 'control'; // Default for owner
+
+      if (!isOwner) {
+        // Find viewer permissions
+        const viewer = session.activeViewers.find(
+          (v) => v.userId.toString() === userId
+        );
+        if (viewer) {
+          permissions = viewer.permissions;
+        } else {
+          ws.close(1008, 'You are not authorized to view this session');
+          return;
+        }
       }
 
       // Get tunnel info
@@ -116,13 +136,18 @@ class VNCProxy {
         return;
       }
 
-      // Create TCP connection to the tunnel
-      const tcpSocket = net.createConnection({
-        host: '127.0.0.1',
-        port: tunnelInfo.localPort,
+      // Get or create session bridge (shared TCP connection)
+      const bridge = await sessionBridgeManager.getOrCreateBridge({
+        sessionId,
+        tunnelHost: '127.0.0.1',
+        tunnelPort: tunnelInfo.localPort,
+        ownerId: session.userId.toString(),
       });
 
-      // Store connection info
+      // Add this viewer to the bridge
+      bridge.addViewer(userId, ws, permissions, isOwner);
+
+      // Store connection info in connection manager
       const connectionInfo: WSConnectionInfo = {
         sessionId,
         userId,
@@ -131,96 +156,43 @@ class VNCProxy {
       };
 
       connectionManager.addConnection(sessionId, ws, connectionInfo);
-      this.tcpConnections.set(sessionId, tcpSocket);
-
-      // Set up TCP socket event handlers
-      tcpSocket.on('connect', () => {
-        logger.debug(`TCP connection established for session ${sessionId}`);
-      });
-
-      tcpSocket.on('data', (data: Buffer) => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(data);
-        }
-      });
-
-      tcpSocket.on('error', (error) => {
-        logger.error(`TCP socket error for session ${sessionId}:`, error);
-        ws.close(1011, 'VNC connection error');
-      });
-
-      tcpSocket.on('close', () => {
-        logger.debug(`TCP connection closed for session ${sessionId}`);
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.close(1000, 'VNC connection closed');
-        }
-      });
-
-      // Set up WebSocket event handlers
-      ws.on('message', (data: WebSocket.Data) => {
-        if (tcpSocket.writable) {
-          tcpSocket.write(data as Buffer);
-        }
-      });
-
-      ws.on('close', (code, reason) => {
-        logger.debug(`WebSocket closed for session ${sessionId}: ${code} ${reason}`);
-        this.cleanup(sessionId as string);
-      });
-
-      ws.on('error', (error) => {
-        logger.error(`WebSocket error for session ${sessionId}:`, error);
-        this.cleanup(sessionId as string);
-      });
 
       // Update session activity
       session.lastActivityAt = new Date();
       await session.save();
 
-      logger.info(`VNC proxy connection established for session ${sessionId}`);
+      logger.info(`VNC proxy connection established`, {
+        sessionId,
+        userId,
+        isOwner,
+        permissions,
+        viewerCount: bridge.getViewerCount(),
+      });
     } catch (error) {
       logger.error('Error handling WebSocket connection:', error);
-      if (sessionId) {
-        this.cleanup(sessionId);
+      if (sessionId && userId) {
+        const bridge = sessionBridgeManager.getBridge(sessionId);
+        if (bridge) {
+          bridge.removeViewer(userId);
+        }
       }
       ws.close(1011, 'Internal server error');
     }
   }
 
   /**
-   * Clean up connection resources
-   */
-  private cleanup(sessionId: string): void {
-    // Close TCP connection
-    const tcpSocket = this.tcpConnections.get(sessionId);
-    if (tcpSocket) {
-      try {
-        tcpSocket.destroy();
-      } catch (error) {
-        logger.warn(`Error destroying TCP socket for session ${sessionId}:`, error);
-      }
-      this.tcpConnections.delete(sessionId);
-    }
-
-    // Remove from connection manager
-    connectionManager.removeConnection(sessionId);
-  }
-
-  /**
    * Close connection for a specific session
    */
   closeSession(sessionId: string): void {
-    this.cleanup(sessionId);
+    sessionBridgeManager.closeBridge(sessionId);
+    connectionManager.removeConnection(sessionId);
   }
 
   /**
    * Close all connections
    */
   closeAll(): void {
-    for (const sessionId of this.tcpConnections.keys()) {
-      this.cleanup(sessionId);
-    }
-
+    sessionBridgeManager.closeAll();
     this.wss.close();
     logger.info('VNC proxy shut down');
   }
@@ -229,7 +201,14 @@ class VNCProxy {
    * Get active connection count
    */
   getActiveConnectionCount(): number {
-    return this.tcpConnections.size;
+    return sessionBridgeManager.getTotalViewerCount();
+  }
+
+  /**
+   * Get active session count
+   */
+  getActiveSessionCount(): number {
+    return sessionBridgeManager.getActiveSessions().length;
   }
 }
 
