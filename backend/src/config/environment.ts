@@ -20,7 +20,7 @@ interface Environment {
   SESSION_TIMEOUT_MINUTES: number;
   RATE_LIMIT_WINDOW_MS: number;
   RATE_LIMIT_MAX_REQUESTS: number;
-  CORS_ORIGIN: string;
+  CORS_ORIGINS: string; // Comma-separated list of allowed origins
   LOG_LEVEL: string;
 }
 
@@ -84,7 +84,7 @@ export function loadEnvironment(): Environment {
     SESSION_TIMEOUT_MINUTES: getEnvNumber('SESSION_TIMEOUT_MINUTES', 30),
     RATE_LIMIT_WINDOW_MS: getEnvNumber('RATE_LIMIT_WINDOW_MS', 900000),
     RATE_LIMIT_MAX_REQUESTS: getEnvNumber('RATE_LIMIT_MAX_REQUESTS', 100),
-    CORS_ORIGIN: getEnvVariable('CORS_ORIGIN', 'http://localhost:5173'),
+    CORS_ORIGINS: getEnvVariable('CORS_ORIGINS', 'http://localhost:3000,http://localhost:3001,https://cloud-desk-tawny.vercel.app'),
     LOG_LEVEL: getEnvVariable('LOG_LEVEL', 'info'),
   };
 

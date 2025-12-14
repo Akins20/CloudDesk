@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import routes from './routes';
 import { errorHandler, notFoundHandler, apiLimiter } from './middleware';
 import { logger } from './utils/logger';
+import { env } from './config/environment';
 
 /**
  * Create and configure Express application
@@ -28,9 +29,26 @@ export const createApp = (): Application => {
     crossOriginEmbedderPolicy: false,
   }));
 
-  // CORS configuration - allow all origins
+  // CORS configuration - restrict to allowed origins
+  const allowedOrigins = env.CORS_ORIGINS
+    ? env.CORS_ORIGINS.split(',').map(o => o.trim())
+    : ['http://localhost:3000', 'http://localhost:3001']; // Default for development
+
   app.use(cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.) in development
+      if (!origin && env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
+
+      // Check if origin is in allowed list
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

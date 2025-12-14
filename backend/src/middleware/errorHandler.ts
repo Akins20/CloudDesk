@@ -10,8 +10,52 @@ interface ErrorResponse {
     message: string;
     code: string;
     details?: Record<string, unknown>;
-    stack?: string;
   };
+}
+
+/**
+ * List of sensitive fields that should never appear in error responses
+ */
+const SENSITIVE_FIELDS = [
+  'password',
+  'privateKey',
+  'credential',
+  'token',
+  'secret',
+  'key',
+  'authorization',
+  'cookie',
+];
+
+/**
+ * Sanitize error details to remove sensitive information
+ */
+function sanitizeErrorDetails(details: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  if (!details) return undefined;
+
+  const sanitized: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(details)) {
+    const lowerKey = key.toLowerCase();
+
+    // Skip sensitive fields
+    if (SENSITIVE_FIELDS.some(field => lowerKey.includes(field))) {
+      sanitized[key] = '[REDACTED]';
+      continue;
+    }
+
+    // Recursively sanitize nested objects
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      sanitized[key] = sanitizeErrorDetails(value as Record<string, unknown>);
+    } else if (typeof value === 'string' && value.length > 200) {
+      // Truncate long strings that might contain sensitive data
+      sanitized[key] = value.substring(0, 200) + '...[truncated]';
+    } else {
+      sanitized[key] = value;
+    }
+  }
+
+  return Object.keys(sanitized).length > 0 ? sanitized : undefined;
 }
 
 /**
@@ -78,27 +122,27 @@ export const errorHandler: ErrorRequestHandler = (
     message = 'Invalid JSON in request body';
   }
 
-  // Build error response
+  // Sanitize error details before sending to client
+  const sanitizedDetails = sanitizeErrorDetails(details);
+
+  // Build error response - NEVER include stack traces in responses
   const errorResponse: ErrorResponse = {
     success: false,
     error: {
       message,
       code,
-      ...(details && { details }),
+      ...(sanitizedDetails && { details: sanitizedDetails }),
     },
   };
 
-  // Include stack trace in development
-  if (env.NODE_ENV === 'development') {
-    errorResponse.error.stack = err.stack;
-  }
-
-  // Log unexpected errors at error level
+  // Log unexpected errors at error level (includes full stack for debugging)
   if (!isOperationalError(err)) {
     logger.error('Unexpected error:', {
       error: err.message,
       stack: err.stack,
       name: err.name,
+      // Log full details to server logs, not client response
+      fullDetails: details,
     });
   }
 

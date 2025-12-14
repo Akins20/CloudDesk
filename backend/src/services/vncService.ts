@@ -1,8 +1,74 @@
 import { Client } from 'ssh2';
+import crypto from 'crypto';
 import { VNC_CONSTANTS } from '../config/constants';
 import { VNCError } from '../utils/errors';
 import { logger, logVNC } from '../utils/logger';
 import { sshService } from './sshService';
+
+/**
+ * Validate and sanitize VNC password
+ * VNC passwords are limited to 8 characters by the protocol
+ */
+function sanitizeVNCPassword(password: string): string {
+  // VNC protocol only uses first 8 characters
+  const sanitized = password.slice(0, 8);
+
+  // Ensure password only contains safe characters (alphanumeric)
+  if (!/^[a-zA-Z0-9]+$/.test(sanitized)) {
+    throw new VNCError('VNC password must contain only alphanumeric characters');
+  }
+
+  if (sanitized.length < 6) {
+    throw new VNCError('VNC password must be at least 6 characters');
+  }
+
+  return sanitized;
+}
+
+/**
+ * Generate a secure random VNC password
+ */
+function generateVNCPassword(): string {
+  // Generate 8 random alphanumeric characters
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let password = '';
+  const randomBytes = crypto.randomBytes(8);
+  for (let i = 0; i < 8; i++) {
+    password += chars[randomBytes[i] % chars.length];
+  }
+  return password;
+}
+
+/**
+ * Validate display number to prevent command injection
+ */
+function validateDisplayNumber(displayNumber: number): number {
+  if (!Number.isInteger(displayNumber) || displayNumber < 1 || displayNumber > 99) {
+    throw new VNCError('Invalid display number');
+  }
+  return displayNumber;
+}
+
+/**
+ * Validate geometry string to prevent command injection
+ */
+function validateGeometry(geometry: string): string {
+  if (!/^\d{3,4}x\d{3,4}$/.test(geometry)) {
+    throw new VNCError('Invalid geometry format');
+  }
+  return geometry;
+}
+
+/**
+ * Validate depth to prevent command injection
+ */
+function validateDepth(depth: number): number {
+  const validDepths = [8, 16, 24, 32];
+  if (!validDepths.includes(depth)) {
+    throw new VNCError('Invalid color depth');
+  }
+  return depth;
+}
 
 interface VNCServerInfo {
   displayNumber: number;
@@ -93,34 +159,49 @@ class VNCService {
   }
 
   /**
-   * Set VNC password
+   * Set VNC password securely
+   * Uses a temporary file approach to avoid command injection
    */
-  async setVNCPassword(client: Client, password: string): Promise<void> {
+  async setVNCPassword(client: Client, password?: string): Promise<string> {
     try {
+      // Generate a secure password if not provided
+      const vncPassword = password ? sanitizeVNCPassword(password) : generateVNCPassword();
+
       // Create .vnc directory
       await sshService.executeCommand(client, 'mkdir -p ~/.vnc');
 
-      // Set password using vncpasswd
-      // We need to use expect or echo to stdin since vncpasswd is interactive
-      const result = await sshService.executeCommand(
+      // Create a temporary file with random name for the password
+      const tempFile = `/tmp/.vncpwd_${crypto.randomBytes(8).toString('hex')}`;
+
+      // Write password to temp file using base64 to avoid any shell escaping issues
+      const base64Password = Buffer.from(`${vncPassword}\n${vncPassword}\nn\n`).toString('base64');
+      await sshService.executeCommand(
         client,
-        `echo -e "${password}\\n${password}\\nn" | vncpasswd`
+        `echo "${base64Password}" | base64 -d > ${tempFile} && chmod 600 ${tempFile}`
       );
 
-      if (result.code !== 0) {
-        // Try alternative method
-        const altResult = await sshService.executeCommand(
-          client,
-          `printf "${password}\\n${password}\\n" | vncpasswd`
-        );
+      // Use the temp file as input to vncpasswd
+      const result = await sshService.executeCommand(
+        client,
+        `cat ${tempFile} | vncpasswd; rm -f ${tempFile}`
+      );
 
-        if (altResult.code !== 0) {
-          throw new VNCError('Failed to set VNC password');
-        }
+      // Always clean up temp file even on error
+      await sshService.executeCommand(client, `rm -f ${tempFile} 2>/dev/null || true`);
+
+      if (result.code !== 0) {
+        throw new VNCError('Failed to set VNC password');
       }
 
+      // Set proper permissions on passwd file
+      await sshService.executeCommand(client, 'chmod 600 ~/.vnc/passwd');
+
       logVNC('password_set', 'vnc');
+      return vncPassword;
     } catch (error) {
+      if (error instanceof VNCError) {
+        throw error;
+      }
       logger.error('Error setting VNC password:', error);
       throw new VNCError('Failed to set VNC password');
     }
@@ -207,32 +288,47 @@ exec startlxde`,
       desktop?: 'xfce' | 'lxde';
     } = {}
   ): Promise<VNCServerInfo> {
-    const {
-      geometry = VNC_CONSTANTS.DEFAULT_GEOMETRY,
-      depth = VNC_CONSTANTS.DEFAULT_DEPTH,
-      desktop = 'xfce',
-    } = options;
+    // Validate all inputs to prevent command injection
+    const validatedDisplay = validateDisplayNumber(displayNumber);
+    const validatedGeometry = validateGeometry(options.geometry || VNC_CONSTANTS.DEFAULT_GEOMETRY);
+    const validatedDepth = validateDepth(options.depth || VNC_CONSTANTS.DEFAULT_DEPTH);
+    const desktop = options.desktop === 'lxde' ? 'lxde' : 'xfce';
 
     try {
       // First, check if this display is already running
       const runningDisplays = await this.getRunningVNCDisplays(client);
-      if (runningDisplays.includes(displayNumber)) {
-        logVNC('server_already_running', 'vnc', { displayNumber });
+      if (runningDisplays.includes(validatedDisplay)) {
+        logVNC('server_already_running', 'vnc', { displayNumber: validatedDisplay });
         return {
-          displayNumber,
-          port: this.getVNCPort(displayNumber),
+          displayNumber: validatedDisplay,
+          port: this.getVNCPort(validatedDisplay),
           isRunning: true,
         };
       }
+
+      // Set up VNC password for authentication
+      await this.setVNCPassword(client);
 
       // Create xstartup for the desktop environment
       await this.createXStartup(client, desktop);
 
       // Kill any existing VNC server on this display first
-      await sshService.executeCommand(client, `vncserver -kill :${displayNumber} 2>/dev/null || true`);
+      await sshService.executeCommand(client, `vncserver -kill :${validatedDisplay} 2>/dev/null || true`);
 
-      // Start VNC server with no authentication (security is handled by our WebSocket proxy)
-      const startCommand = `vncserver :${displayNumber} -geometry ${geometry} -depth ${depth} -SecurityTypes None 2>&1`;
+      // Start VNC server with:
+      // - localhost only (-localhost yes) - CRITICAL for security, only accept connections via SSH tunnel
+      // - VncAuth authentication as fallback security layer
+      // - Specified geometry and depth
+      const startCommand = [
+        'vncserver',
+        `:${validatedDisplay}`,
+        `-geometry ${validatedGeometry}`,
+        `-depth ${validatedDepth}`,
+        '-localhost yes',  // SECURITY: Only accept connections from localhost (via SSH tunnel)
+        '-SecurityTypes VncAuth',  // SECURITY: Require VNC password authentication
+        '2>&1'
+      ].join(' ');
+
       logger.info('Starting VNC server with command:', startCommand);
       const result = await sshService.executeCommand(client, startCommand);
 
@@ -254,7 +350,7 @@ exec startlxde`,
       const newRunningDisplays = await this.getRunningVNCDisplays(client);
       logger.info('Running VNC displays after start:', newRunningDisplays);
 
-      if (!newRunningDisplays.includes(displayNumber)) {
+      if (!newRunningDisplays.includes(validatedDisplay)) {
         // Check VNC log file for errors
         const logResult = await sshService.executeCommand(
           client,
@@ -262,14 +358,14 @@ exec startlxde`,
         );
         logger.error('VNC log contents:', logResult.stdout);
 
-        throw new VNCError(`VNC server failed to start - display :${displayNumber} not found. Check VNC logs: ${logResult.stdout.substring(0, 500)}`);
+        throw new VNCError(`VNC server failed to start - display :${validatedDisplay} not found. Check VNC logs: ${logResult.stdout.substring(0, 500)}`);
       }
 
-      const port = this.getVNCPort(displayNumber);
-      logVNC('server_started', 'vnc', { displayNumber, port, geometry, depth });
+      const port = this.getVNCPort(validatedDisplay);
+      logVNC('server_started', 'vnc', { displayNumber: validatedDisplay, port, geometry: validatedGeometry, depth: validatedDepth });
 
       return {
-        displayNumber,
+        displayNumber: validatedDisplay,
         port,
         isRunning: true,
       };
@@ -286,10 +382,13 @@ exec startlxde`,
    * Stop VNC server
    */
   async stopVNCServer(client: Client, displayNumber: number): Promise<void> {
+    // Validate input to prevent command injection
+    const validatedDisplay = validateDisplayNumber(displayNumber);
+
     try {
       const result = await sshService.executeCommand(
         client,
-        `vncserver -kill :${displayNumber}`
+        `vncserver -kill :${validatedDisplay}`
       );
 
       // VNC server returns code 1 if the display wasn't running
@@ -297,7 +396,7 @@ exec startlxde`,
         logger.warn('VNC stop warning:', result.stderr);
       }
 
-      logVNC('server_stopped', 'vnc', { displayNumber });
+      logVNC('server_stopped', 'vnc', { displayNumber: validatedDisplay });
     } catch (error) {
       logger.error('Error stopping VNC server:', error);
       throw new VNCError('Failed to stop VNC server');
