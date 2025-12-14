@@ -2,7 +2,6 @@ import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import { isAppError, isOperationalError } from '../utils/errors';
 import { ERROR_CODES, HTTP_STATUS } from '../config/constants';
 import { logger, logError } from '../utils/logger';
-import { env } from '../config/environment';
 
 interface ErrorResponse {
   success: false;

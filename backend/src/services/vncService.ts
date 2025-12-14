@@ -317,15 +317,21 @@ exec startlxde`,
 
       // Start VNC server with:
       // - localhost only (-localhost yes) - CRITICAL for security, only accept connections via SSH tunnel
-      // - VncAuth authentication as fallback security layer
+      // - SecurityTypes None - Authentication is handled by SSH tunnel + JWT WebSocket auth
       // - Specified geometry and depth
+      //
+      // Security Model:
+      // 1. VNC only listens on localhost (127.0.0.1) - cannot be accessed directly from internet
+      // 2. Access requires authenticated SSH tunnel (user's SSH key/password)
+      // 3. WebSocket connection requires valid JWT token
+      // This is a standard VNC-over-SSH security pattern.
       const startCommand = [
         'vncserver',
         `:${validatedDisplay}`,
         `-geometry ${validatedGeometry}`,
         `-depth ${validatedDepth}`,
-        '-localhost yes',  // SECURITY: Only accept connections from localhost (via SSH tunnel)
-        '-SecurityTypes VncAuth',  // SECURITY: Require VNC password authentication
+        '-localhost yes',  // CRITICAL: Only accept connections from localhost (via SSH tunnel)
+        '-SecurityTypes None',  // Auth handled by SSH tunnel + JWT
         '2>&1'
       ].join(' ');
 
