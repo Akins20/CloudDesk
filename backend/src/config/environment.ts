@@ -76,7 +76,7 @@ export function loadEnvironment(): Environment {
     REDIS_URL: getEnvVariable('REDIS_URL', 'redis://localhost:6379'),
     JWT_ACCESS_SECRET: getEnvVariable('JWT_ACCESS_SECRET'),
     JWT_REFRESH_SECRET: getEnvVariable('JWT_REFRESH_SECRET'),
-    JWT_ACCESS_EXPIRY: getEnvVariable('JWT_ACCESS_EXPIRY', '15m'),
+    JWT_ACCESS_EXPIRY: getEnvVariable('JWT_ACCESS_EXPIRY', '24h'),
     JWT_REFRESH_EXPIRY: getEnvVariable('JWT_REFRESH_EXPIRY', '7d'),
     ENCRYPTION_KEY: getEnvVariable('ENCRYPTION_KEY'),
     TUNNEL_PORT_RANGE_START: getEnvNumber('TUNNEL_PORT_RANGE_START', 6000),
