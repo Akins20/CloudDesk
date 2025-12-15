@@ -35,13 +35,25 @@ export const connect = asyncHandler(async (req: Request, res: Response): Promise
   }
 
   // Verify user's password before attempting to decrypt credentials
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).select('+password');
   if (!user) {
     res.status(HTTP_STATUS.UNAUTHORIZED).json({
       success: false,
       error: {
         message: 'User not found',
         code: ERROR_CODES.USER_NOT_FOUND,
+      },
+    });
+    return;
+  }
+
+  // Check if user has a password set
+  if (!user.password) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      error: {
+        message: 'Account password not set. Please set a password in your profile settings.',
+        code: 'PASSWORD_NOT_SET',
       },
     });
     return;
