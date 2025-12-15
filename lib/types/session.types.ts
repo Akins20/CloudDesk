@@ -19,6 +19,8 @@ export interface Session {
   updatedAt: string;
   isActive: boolean;
   duration: number | null;
+  isOwner?: boolean;
+  permissions?: 'view' | 'control';
 }
 
 export interface ConnectSessionData {
