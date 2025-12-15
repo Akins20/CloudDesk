@@ -1,7 +1,7 @@
 // API Configuration
 // IMPORTANT: Use HTTPS in production to avoid mixed content errors
 // Set NEXT_PUBLIC_API_URL in .env.local or Vercel environment variables
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://18.209.65.32';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://cldesk.duckdns.org';
 export const API_ENDPOINTS = {
   // Auth
   AUTH: {

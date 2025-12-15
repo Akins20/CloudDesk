@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document analyzes the current CloudDesk backend infrastructure (deployed at 18.209.65.32) and provides detailed recommendations for scaling to support 1000+ concurrent users with multiple active VNC sessions.
+This document analyzes the current CloudDesk backend infrastructure (deployed at cldesk.duckdns.org (54.156.134.142)) and provides detailed recommendations for scaling to support 1000+ concurrent users with multiple active VNC sessions.
 
 **Critical Finding**: The current single-server, single-process Node.js architecture can support approximately 50-100 concurrent VNC sessions before hitting critical bottlenecks. Scaling to 1000+ users requires significant architectural changes.
 
@@ -11,7 +11,7 @@ This document analyzes the current CloudDesk backend infrastructure (deployed at
 ## 1. Current Server Specifications
 
 ### Deployment Information
-- **Server IP**: 18.209.65.32
+- **Server IP**: cldesk.duckdns.org (54.156.134.142)
 - **Platform**: Assumed AWS EC2 (based on IP range)
 - **No PM2 Configuration Found**: Backend runs as single Node.js process
 - **Node.js Version**: v22.20.0 (as detected in development environment)
@@ -216,8 +216,8 @@ Actual Capacity with These Specs:
 
 **To verify actual specs, run on the EC2 instance**:
 ```bash
-# SSH into 18.209.65.32
-ssh user@18.209.65.32
+# SSH into cldesk.duckdns.org (54.156.134.142)
+ssh user@cldesk.duckdns.org (54.156.134.142)
 
 # Check CPU
 lscpu | grep -E "^CPU\(s\)|Model name"
@@ -1766,7 +1766,7 @@ curl -f https://api.clouddesk.app/api/health
    - Reserved instance commitment acceptable?
 
 5. **Deployment Access**:
-   - SSH access to 18.209.65.32?
+   - SSH access to cldesk.duckdns.org (54.156.134.142)?
    - AWS account access for infrastructure changes?
    - MongoDB Atlas account or self-hosted?
 

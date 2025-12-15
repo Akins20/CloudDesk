@@ -136,7 +136,8 @@ Monochrome palette with glassy effects:
 
 ### Server Credentials
 - **SSH Key**: `backend/CloudDesk.pem`
-- **IP Address**: 18.209.65.32
+- **IP Address**: 54.156.134.142
+- **Domain**: cldesk.duckdns.org
 - **Username**: ubuntu
 - **Working Directory**: `~/clouddesk`
 - **Credentials File**: `backend/Backend_Server_Credentials.txt`
@@ -149,30 +150,30 @@ After making backend changes, deploy to the server (runs in Docker):
 cd backend && npm run build
 
 # 2. SCP the backend source code to the server
-scp -i backend/CloudDesk.pem -r backend/src ubuntu@18.209.65.32:~/clouddesk/
+scp -i backend/CloudDesk.pem -r backend/src ubuntu@54.156.134.142:~/clouddesk/
 
 # 3. SSH into the server and rebuild Docker container
-ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32 "cd ~/clouddesk && docker compose up -d --build backend"
+ssh -i backend/CloudDesk.pem ubuntu@54.156.134.142 "cd ~/clouddesk && docker compose up -d --build backend"
 ```
 
 ### Quick Deployment Commands (from project root)
 ```bash
 # Deploy and rebuild (one-liner)
-scp -i backend/CloudDesk.pem -r backend/src ubuntu@18.209.65.32:~/clouddesk/ && ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32 "cd ~/clouddesk && docker compose up -d --build backend"
+scp -i backend/CloudDesk.pem -r backend/src ubuntu@54.156.134.142:~/clouddesk/ && ssh -i backend/CloudDesk.pem ubuntu@54.156.134.142 "cd ~/clouddesk && docker compose up -d --build backend"
 
 # SSH into server
-ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32
+ssh -i backend/CloudDesk.pem ubuntu@54.156.134.142
 
 # Check backend logs
-ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32 "docker logs clouddesk-backend --tail 50"
+ssh -i backend/CloudDesk.pem ubuntu@54.156.134.142 "docker logs clouddesk-backend --tail 50"
 
 # Check all container status
-ssh -i backend/CloudDesk.pem ubuntu@18.209.65.32 "cd ~/clouddesk && docker compose ps"
+ssh -i backend/CloudDesk.pem ubuntu@54.156.134.142 "cd ~/clouddesk && docker compose ps"
 ```
 
 ### Server URLs
-- Production API: https://18.209.65.32 (SSL via Nginx)
-- Health Check: https://18.209.65.32/api/health
+- Production API: https://cldesk.duckdns.org (SSL via Certbot/Let's Encrypt)
+- Health Check: https://cldesk.duckdns.org/api/health
 
 ## Key Files
 

@@ -14,7 +14,9 @@
       "WebSearch",
       "WebFetch(domain:freddyreyes.com)",
       "Bash(npm --version:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(nslookup:*)",
+      "Bash(curl:*)"
     ]
   }
 }

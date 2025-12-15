@@ -112,7 +112,7 @@ Use this for quick testing without a domain name. **Not recommended for producti
 
 6. **Update frontend environment variable:**
    ```
-   NEXT_PUBLIC_API_URL=https://18.209.65.32
+   NEXT_PUBLIC_API_URL=https://cldesk.duckdns.org
    ```
 
 7. **Redeploy frontend on Vercel**
@@ -196,7 +196,7 @@ No changes needed. Backend runs on `localhost:3000` and Nginx proxies to it.
 NEXT_PUBLIC_API_URL=https://api.clouddesk.com
 
 # For self-signed (testing only)
-NEXT_PUBLIC_API_URL=https://18.209.65.32
+NEXT_PUBLIC_API_URL=https://cldesk.duckdns.org
 ```
 
 After updating, redeploy on Vercel.
