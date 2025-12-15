@@ -34,12 +34,12 @@ export const AUTH_CONSTANTS = {
   TOKEN_TYPE: 'Bearer',
 } as const;
 
-// Rate Limiting
+// Rate Limiting (lenient settings for development)
 export const RATE_LIMIT_CONSTANTS = {
-  AUTH_WINDOW_MS: 900000, // 15 minutes
-  AUTH_MAX_REQUESTS: 5, // 5 login attempts per 15 minutes
-  API_WINDOW_MS: 900000, // 15 minutes
-  API_MAX_REQUESTS: 100, // 100 requests per 15 minutes
+  AUTH_WINDOW_MS: 60000, // 1 minute
+  AUTH_MAX_REQUESTS: 60, // 60 auth attempts per minute
+  API_WINDOW_MS: 60000, // 1 minute
+  API_MAX_REQUESTS: 300, // 300 requests per minute
 } as const;
 
 // Desktop Environments
@@ -131,6 +131,9 @@ export const ERROR_CODES = {
   SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
   SESSION_ALREADY_EXISTS: 'SESSION_ALREADY_EXISTS',
   SESSION_LIMIT_REACHED: 'SESSION_LIMIT_REACHED',
+
+  // Password
+  INCORRECT_PASSWORD: 'INCORRECT_PASSWORD',
 
   // Tunnel
   TUNNEL_CREATION_FAILED: 'TUNNEL_CREATION_FAILED',

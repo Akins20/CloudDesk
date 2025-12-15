@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { Instance } from '../models/Instance';
+import { User } from '../models/User';
 import { AuditLog } from '../models/AuditLog';
 import { sshService } from '../services/sshService';
 import { encryptionService } from '../services/encryptionService';
@@ -111,6 +112,33 @@ export const createInstance = asyncHandler(async (req: Request, res: Response): 
   const data: CreateInstanceDTO = req.body;
   const ipAddress = getClientIp(req);
   const userAgent = getUserAgent(req);
+
+  // Verify user's password before creating instance with encrypted credentials
+  if (data.password) {
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        error: {
+          message: 'User not found',
+          code: ERROR_CODES.USER_NOT_FOUND,
+        },
+      });
+      return;
+    }
+
+    const isPasswordValid = await user.comparePassword(data.password);
+    if (!isPasswordValid) {
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        error: {
+          message: 'Incorrect password. Please enter your correct account password.',
+          code: ERROR_CODES.INCORRECT_PASSWORD,
+        },
+      });
+      return;
+    }
+  }
 
   // Encrypt the credential
   const encryptedCredential = encryptionService.encrypt(data.credential);

@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { sessionService } from '../services/sessionService';
 import { asyncHandler, AuthRequest, getClientIp, getUserAgent } from '../middleware';
-import { HTTP_STATUS } from '../config/constants';
+import { HTTP_STATUS, ERROR_CODES } from '../config/constants';
 import { ConnectSessionDTO } from '../types';
 import { logger } from '../utils/logger';
+import { User } from '../models/User';
 
 /**
  * Connect to an instance (create session)
@@ -28,6 +29,31 @@ export const connect = asyncHandler(async (req: Request, res: Response): Promise
       error: {
         message: 'Password is required to decrypt credentials',
         code: 'PASSWORD_REQUIRED',
+      },
+    });
+    return;
+  }
+
+  // Verify user's password before attempting to decrypt credentials
+  const user = await User.findById(userId);
+  if (!user) {
+    res.status(HTTP_STATUS.UNAUTHORIZED).json({
+      success: false,
+      error: {
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      },
+    });
+    return;
+  }
+
+  const isPasswordValid = await user.comparePassword(data.password);
+  if (!isPasswordValid) {
+    res.status(HTTP_STATUS.UNAUTHORIZED).json({
+      success: false,
+      error: {
+        message: 'Incorrect password. Please enter your account password to decrypt credentials.',
+        code: ERROR_CODES.INCORRECT_PASSWORD,
       },
     });
     return;

@@ -50,6 +50,7 @@ export interface CreateInstanceDTO {
   authType: 'key' | 'password';
   credential: string;
   tags?: string[];
+  password?: string; // User's account password for verification
 }
 
 export interface UpdateInstanceDTO {
@@ -62,6 +63,7 @@ export interface UpdateInstanceDTO {
   credential?: string;
   tags?: string[];
   status?: 'active' | 'inactive';
+  password?: string; // User's account password for verification
 }
 
 // Session types
