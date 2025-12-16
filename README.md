@@ -1,36 +1,188 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CloudDesk
 
-## Getting Started
+Remote desktop access to your cloud instances via VNC. Connect to EC2, OCI, and other cloud VMs directly from your browser.
 
-First, run the development server:
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node](https://img.shields.io/badge/node-20%2B-green.svg)
+![Docker](https://img.shields.io/badge/docker-24%2B-blue.svg)
+
+## Features
+
+- **Browser-based VNC** - Access your cloud instances without installing software
+- **Multi-cloud support** - AWS EC2, Oracle Cloud Infrastructure (OCI)
+- **Secure connections** - SSH tunneling with encrypted credentials
+- **Session management** - Multiple concurrent sessions with activity tracking
+- **Collaboration** - Share sessions with team members (coming soon)
+- **Self-hosted option** - Deploy in your own infrastructure
+
+## Quick Start
+
+### Option 1: Hosted Service (SaaS)
+
+Visit [clouddesk.io](https://clouddesk.io) to get started immediately.
+
+### Option 2: Self-Hosted
+
+Deploy CloudDesk in your own infrastructure for full data sovereignty.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clone the repository
+git clone https://github.com/Akins20/CloudDesk.git
+cd CloudDesk
+
+# Run setup script (generates secrets and .env)
+# Linux/Mac:
+./scripts/setup.sh
+
+# Windows (PowerShell):
+.\scripts\setup.ps1
+
+# Start CloudDesk
+docker compose -f docker-compose.selfhosted.yml up -d
+
+# Check status
+docker compose -f docker-compose.selfhosted.yml ps
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Access at `https://your-domain.com`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+📖 **Full self-hosting guide:** [SELF_HOSTING.md](SELF_HOSTING.md)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Architecture
 
-## Learn More
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Frontend      │────▶│   Backend API   │────▶│  Cloud Instance │
+│   (Next.js)     │     │   (Express)     │     │  (EC2/OCI)      │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+        │                       │
+        │                       ▼
+        │               ┌─────────────────┐
+        │               │  Session        │
+        │               │  Controller     │
+        │               └─────────────────┘
+        │                       │
+        ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐
+│   noVNC Client  │◀───▶│  VNC Workers    │
+│   (WebSocket)   │     │  (Docker)       │
+└─────────────────┘     └─────────────────┘
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Node.js 20+
+- Docker & Docker Compose
+- MongoDB 7+
+- Redis 7+
 
-## Deploy on Vercel
+### Frontend
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm install
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Backend
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+### Environment Variables
+
+Copy the example files and configure:
+
+```bash
+# Frontend
+cp .env.example .env.local
+
+# Backend
+cp backend/.env.example backend/.env
+```
+
+## Deployment
+
+### Frontend (Vercel)
+
+```bash
+vercel --prod
+```
+
+### Backend (Docker)
+
+```bash
+cd backend
+docker compose -f docker-compose.prod.yml up -d
+```
+
+## License Tiers
+
+| Feature | Community | Team | Enterprise |
+|---------|-----------|------|------------|
+| Users | 5 | Unlimited | Unlimited |
+| Instances | 10 | Unlimited | Unlimited |
+| Concurrent Sessions | 3 | 20 | Unlimited |
+| Audit Logs | ❌ | ✅ | ✅ |
+| Custom Branding | ❌ | ✅ | ✅ |
+| SSO Integration | ❌ | ❌ | ✅ |
+| Priority Support | ❌ | ❌ | ✅ |
+| Price | Free | $99/mo | $299/mo |
+
+## API Documentation
+
+### Authentication
+
+```bash
+# Register
+POST /api/auth/register
+{ "email": "user@example.com", "password": "..." }
+
+# Login
+POST /api/auth/login
+{ "email": "user@example.com", "password": "..." }
+```
+
+### Instances
+
+```bash
+# List instances
+GET /api/instances
+
+# Create instance
+POST /api/instances
+{ "name": "...", "host": "...", "port": 22, ... }
+```
+
+### Sessions
+
+```bash
+# Connect to instance
+POST /api/sessions/connect
+{ "instanceId": "...", "password": "..." }
+
+# Disconnect
+POST /api/sessions/disconnect/:sessionId
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Support
+
+- **Documentation:** [SELF_HOSTING.md](SELF_HOSTING.md)
+- **Issues:** [GitHub Issues](https://github.com/Akins20/CloudDesk/issues)
+- **Email:** support@clouddesk.io
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
