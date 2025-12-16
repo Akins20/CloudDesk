@@ -5,6 +5,7 @@ import {
   validateBody,
   validateParams,
   validateQuery,
+  checkInstanceLimit,
 } from '../middleware';
 import {
   createInstanceSchema,
@@ -47,6 +48,7 @@ router.get(
  */
 router.post(
   '/',
+  checkInstanceLimit,
   validateBody(createInstanceSchema),
   instanceController.createInstance
 );

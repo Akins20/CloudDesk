@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authController } from '../controllers';
-import { authenticate, validateBody, authLimiter } from '../middleware';
+import { authenticate, validateBody, authLimiter, checkUserLimit } from '../middleware';
 import {
   registerSchema,
   loginSchema,
@@ -18,6 +18,7 @@ const router = Router();
 router.post(
   '/register',
   authLimiter,
+  checkUserLimit,
   validateBody(registerSchema),
   authController.register
 );
