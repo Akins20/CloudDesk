@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import api, { setTokens, clearTokens, ApiResponse } from '@/lib/api/client';
+import api, { setTokens, clearTokens, getTokens, ApiResponse } from '@/lib/api/client';
 
 export interface Customer {
   id: string;
@@ -18,6 +18,7 @@ interface AuthState {
   customer: Customer | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasHydrated: boolean;
 
   // Actions
   login: (email: string, password: string) => Promise<void>;
@@ -25,6 +26,7 @@ interface AuthState {
   logout: () => void;
   fetchProfile: () => Promise<void>;
   updateProfile: (data: Partial<Customer>) => Promise<void>;
+  setHasHydrated: (state: boolean) => void;
 }
 
 interface RegisterData {
@@ -47,6 +49,11 @@ export const useAuthStore = create<AuthState>()(
       customer: null,
       isAuthenticated: false,
       isLoading: false,
+      hasHydrated: false,
+
+      setHasHydrated: (state: boolean) => {
+        set({ hasHydrated: state });
+      },
 
       login: async (email: string, password: string) => {
         set({ isLoading: true });
@@ -121,6 +128,19 @@ export const useAuthStore = create<AuthState>()(
         customer: state.customer,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Mark hydration as complete
+        state?.setHasHydrated(true);
+
+        // Restore tokens from localStorage if authenticated
+        if (state?.isAuthenticated && typeof window !== 'undefined') {
+          const { accessToken, refreshToken } = getTokens();
+          if (!accessToken || !refreshToken) {
+            // Tokens are missing, clear auth state
+            state.logout();
+          }
+        }
+      },
     }
   )
 );

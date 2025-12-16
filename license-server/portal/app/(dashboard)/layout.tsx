@@ -14,16 +14,29 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { customer, isAuthenticated, logout, fetchProfile } = useAuthStore();
+  const { customer, isAuthenticated, hasHydrated, logout, fetchProfile } = useAuthStore();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    } else {
+    if (hasHydrated && !isAuthenticated) {
+      router.replace('/login');
+    } else if (hasHydrated && isAuthenticated) {
       fetchProfile();
     }
-  }, [isAuthenticated, router, fetchProfile]);
+  }, [hasHydrated, isAuthenticated, router, fetchProfile]);
 
+  // Show loading while checking auth state
+  if (!hasHydrated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/50">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return null;
   }

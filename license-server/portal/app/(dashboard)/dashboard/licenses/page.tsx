@@ -96,7 +96,7 @@ export default function LicensesPage() {
         ) : licenses.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">&#128273;</span>
+              <KeyIcon className="w-10 h-10 text-white/40" />
             </div>
             <p className="text-white/60 mb-2">
               You don&apos;t have any licenses yet.
@@ -117,7 +117,7 @@ export default function LicensesPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
-                        <span className="text-2xl">&#128273;</span>
+                        <KeyIcon className="w-6 h-6 text-blue-400" />
                       </div>
                       <div>
                         <div className="flex items-center gap-3 mb-1">
@@ -309,6 +309,14 @@ function ClockIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function KeyIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
     </svg>
   );
 }
