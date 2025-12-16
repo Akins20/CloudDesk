@@ -93,6 +93,15 @@ apiClient.interceptors.request.use(
   }
 );
 
+// License error codes that trigger upgrade modal
+const LICENSE_ERROR_CODES = [
+  'USER_LIMIT_REACHED',
+  'INSTANCE_LIMIT_REACHED',
+  'SESSION_LIMIT_REACHED',
+] as const;
+
+type LicenseErrorCode = typeof LICENSE_ERROR_CODES[number];
+
 // Response interceptor - handle 401 and refresh tokens
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
@@ -100,6 +109,27 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
+
+    // Handle 403 Forbidden - Check for license limit errors
+    if (error.response?.status === 403) {
+      const errorCode = error.response.data?.error?.code;
+      if (errorCode && LICENSE_ERROR_CODES.includes(errorCode as LicenseErrorCode)) {
+        // Import dynamically to avoid circular dependencies
+        const { useLicenseStore } = await import('@/lib/stores/license.store');
+        const { showUpgradeModal } = useLicenseStore.getState();
+
+        const details = error.response.data?.error?.details as Record<string, number> | undefined;
+        const currentUsage = details?.current || 0;
+        const limit = details?.limit || 0;
+
+        // Determine limit type from error code
+        let limitType: 'user' | 'instance' | 'session' = 'instance';
+        if (errorCode === 'USER_LIMIT_REACHED') limitType = 'user';
+        else if (errorCode === 'SESSION_LIMIT_REACHED') limitType = 'session';
+
+        showUpgradeModal(limitType, currentUsage, limit, errorCode);
+      }
+    }
 
     // Handle 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {

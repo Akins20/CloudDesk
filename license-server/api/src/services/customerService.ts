@@ -238,3 +238,81 @@ export async function getCustomers(
     },
   };
 }
+
+/**
+ * Reveal full license key for a customer
+ */
+export async function revealLicenseKey(
+  customerId: string,
+  licenseId: string,
+  ipAddress?: string
+): Promise<string> {
+  const customer = await getCustomerById(customerId);
+
+  if (!Types.ObjectId.isValid(licenseId)) {
+    throw new NotFoundError('License not found', ERROR_CODES.LICENSE_NOT_FOUND);
+  }
+
+  const license = await License.findOne({
+    _id: licenseId,
+    customerId: customer._id,
+  });
+
+  if (!license) {
+    throw new NotFoundError('License not found', ERROR_CODES.LICENSE_NOT_FOUND);
+  }
+
+  // Audit log
+  await AuditLog.create({
+    entityType: 'license',
+    entityId: license._id,
+    action: 'license.key_revealed',
+    actorType: 'customer',
+    actorId: customer._id,
+    details: { tier: license.tier },
+    ipAddress,
+  });
+
+  logger.info(`License key revealed for customer: ${customer.email}`);
+
+  return license.key;
+}
+
+/**
+ * Change customer password
+ */
+export async function changePassword(
+  customerId: string,
+  currentPassword: string,
+  newPassword: string,
+  ipAddress?: string
+): Promise<void> {
+  const customer = await Customer.findById(customerId).select('+password');
+  if (!customer) {
+    throw new NotFoundError('Customer not found', ERROR_CODES.CUSTOMER_NOT_FOUND);
+  }
+
+  // Verify current password
+  const isValid = await customer.comparePassword(currentPassword);
+  if (!isValid) {
+    throw new ValidationError('Current password is incorrect', { field: 'currentPassword' });
+  }
+
+  // Update password
+  customer.password = newPassword;
+  customer.refreshTokenVersion += 1; // Invalidate all refresh tokens
+  await customer.save();
+
+  // Audit log
+  await AuditLog.create({
+    entityType: 'customer',
+    entityId: customer._id,
+    action: 'customer.password_changed',
+    actorType: 'customer',
+    actorId: customer._id,
+    details: {},
+    ipAddress,
+  });
+
+  logger.info(`Password changed for customer: ${customer.email}`);
+}

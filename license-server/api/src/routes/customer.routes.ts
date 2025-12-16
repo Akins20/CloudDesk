@@ -45,6 +45,24 @@ router.put(
 
 router.get('/licenses', authenticateCustomer, customerController.getLicenses);
 
+router.get(
+  '/licenses/:licenseId/reveal',
+  authenticateCustomer,
+  customerController.revealLicenseKey
+);
+
 router.get('/subscription', authenticateCustomer, customerController.getSubscription);
+
+router.post(
+  '/change-password',
+  authenticateCustomer,
+  validateBody(
+    Joi.object({
+      currentPassword: Joi.string().required(),
+      newPassword: Joi.string().min(8).required(),
+    })
+  ),
+  customerController.changePassword
+);
 
 export default router;

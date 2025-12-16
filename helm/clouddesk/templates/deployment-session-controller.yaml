@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "clouddesk.fullname" . }}-session-controller
+  labels:
+    {{- include "clouddesk.sessionController.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.sessionController.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "clouddesk.sessionController.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "clouddesk.sessionController.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      {{- include "clouddesk.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "clouddesk.serviceAccountName" . }}
+      containers:
+        - name: session-controller
+          image: "{{ .Values.global.imageRegistry }}{{ .Values.sessionController.image.repository }}:{{ .Values.sessionController.image.tag }}"
+          imagePullPolicy: {{ .Values.sessionController.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "clouddesk.fullname" . }}-config
+            - secretRef:
+                name: {{ include "clouddesk.fullname" . }}-secret
+          env:
+            - name: WORKER_IMAGE
+              value: "{{ .Values.global.imageRegistry }}{{ .Values.sessionWorker.image.repository }}:{{ .Values.sessionWorker.image.tag }}"
+            - name: WORKER_PORT_START
+              value: {{ .Values.sessionWorker.portRange.start | quote }}
+            - name: WORKER_PORT_END
+              value: {{ .Values.sessionWorker.portRange.end | quote }}
+            - name: DOCKER_NETWORK
+              value: {{ include "clouddesk.fullname" . }}-network
+          {{- if .Values.sessionController.dockerSocket.enabled }}
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+          {{- end }}
+          resources:
+            {{- toYaml .Values.sessionController.resources | nindent 12 }}
+      {{- if .Values.sessionController.dockerSocket.enabled }}
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: {{ .Values.sessionController.dockerSocket.hostPath }}
+            type: Socket
+      {{- end }}
+      {{- with .Values.sessionController.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sessionController.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sessionController.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

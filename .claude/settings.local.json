@@ -16,7 +16,14 @@
       "Bash(npm --version:*)",
       "Bash(git push:*)",
       "Bash(nslookup:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "Bash(powershell -Command \"Get-Content ''components/desktop/VNCViewer.tsx'' | Select-Object -First 5\")",
+      "Bash(git checkout:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(dir \"F:\\Development\\cloud-desk\\*.config.*\")",
+      "Bash(npx ts-node:*)"
     ]
   }
 }

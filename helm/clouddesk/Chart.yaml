@@ -1,0 +1,28 @@
+apiVersion: v2
+name: clouddesk
+description: CloudDesk - Remote Desktop Management Platform for Cloud Instances
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - remote-desktop
+  - vnc
+  - cloud
+  - ec2
+  - oci
+  - kubernetes
+home: https://github.com/clouddesk/clouddesk
+sources:
+  - https://github.com/clouddesk/clouddesk
+maintainers:
+  - name: CloudDesk Team
+    email: support@clouddesk.io
+dependencies:
+  - name: mongodb
+    version: "14.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: mongodb.enabled
+  - name: redis
+    version: "18.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled

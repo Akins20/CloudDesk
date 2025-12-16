@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # License Server API
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: license-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/license-server
+      - REDIS_URL=redis://redis:6379
+      - PORT=3000
+    env_file:
+      - ./api/.env
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - license-network
+
+  # Customer Portal
+  portal:
+    build:
+      context: ./portal
+      dockerfile: Dockerfile
+    container_name: license-portal
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://api:3000/api
+    networks:
+      - license-network
+
+  # MongoDB
+  mongodb:
+    image: mongo:7
+    container_name: license-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - license-network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: license-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - license-network
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  license-network:
+    driver: bridge

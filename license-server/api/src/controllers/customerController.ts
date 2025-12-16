@@ -197,3 +197,53 @@ export async function getSubscription(
     next(error);
   }
 }
+
+/**
+ * Reveal full license key
+ */
+export async function revealLicenseKey(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const key = await customerService.revealLicenseKey(
+      req.customer!.id,
+      req.params.licenseId!,
+      req.ip
+    );
+
+    res.json({
+      success: true,
+      data: { key },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Change password
+ */
+export async function changePassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    await customerService.changePassword(
+      req.customer!.id,
+      currentPassword,
+      newPassword,
+      req.ip
+    );
+
+    res.json({
+      success: true,
+      data: { message: 'Password changed successfully' },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
