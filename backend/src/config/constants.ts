@@ -55,7 +55,7 @@ export const AUTH_TYPES = ['key', 'password'] as const;
 export type AuthType = typeof AUTH_TYPES[number];
 
 // Session Statuses
-export const SESSION_STATUSES = ['connecting', 'connected', 'disconnected', 'error'] as const;
+export const SESSION_STATUSES = ['connecting', 'connected', 'recoverable', 'disconnected', 'error'] as const;
 export type SessionStatus = typeof SESSION_STATUSES[number];
 
 // Instance Statuses

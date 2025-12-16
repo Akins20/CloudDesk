@@ -8,6 +8,7 @@ import { sshService } from './services/sshService';
 import { createVNCProxy } from './websocket/vncProxy';
 import { connectionManager } from './websocket/connectionManager';
 import { logger } from './utils/logger';
+import { sessionRecoveryService } from './services/sessionRecoveryService';
 
 // Create Express app
 const app = createApp();
@@ -62,6 +63,10 @@ const startServer = async (): Promise<void> => {
   try {
     // Connect to database
     await connectDatabase();
+
+    // Recover sessions from previous restart
+    const recoveryResult = await sessionRecoveryService.recoverSessions();
+    logger.info('Session recovery complete', recoveryResult);
 
     // Start session cleanup job
     sessionService.startCleanupJob();

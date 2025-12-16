@@ -43,6 +43,52 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
   const [vncUrl, setVncUrl] = useState<string | null>(null);
   const [viewers, setViewers] = useState<Viewer[]>([]);
   const [viewerCount, setViewerCount] = useState(0);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const maxReconnectAttempts = 3;
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check if session is recoverable and attempt auto-reconnect
+  const attemptAutoReconnect = useCallback(async () => {
+    if (reconnectAttempt >= maxReconnectAttempts) {
+      setIsReconnecting(false);
+      setError('Connection lost. Maximum reconnection attempts reached.');
+      return;
+    }
+    setIsReconnecting(true);
+    const attempt = reconnectAttempt + 1;
+    setReconnectAttempt(attempt);
+    try {
+      const response = await api.get<{ isRecoverable: boolean; workerStatus: string; reason?: string }>(`/api/sessions/${sessionId}/status`);
+      if (response.success && response.data?.isRecoverable) {
+        toast.info(`Reconnecting... (attempt ${attempt}/${maxReconnectAttempts})`);
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (iframeRef.current) {
+            iframeRef.current.src = iframeRef.current.src;
+            setIsConnecting(true);
+            setError(null);
+          }
+        }, delay);
+      } else {
+        setIsReconnecting(false);
+        setError(response.data?.reason || 'Session is no longer available.');
+      }
+    } catch (err) {
+      console.error('Failed to check session status:', err);
+      setIsReconnecting(false);
+      setError('Connection lost. Unable to verify session status.');
+    }
+  }, [sessionId, reconnectAttempt]);
+
+  // Cleanup reconnect timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Build VNC URL on mount
   useEffect(() => {
@@ -93,13 +139,16 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
       if (event.data.type === 'vnc-connected') {
         setIsConnected(true);
         setIsConnecting(false);
+        setIsReconnecting(false);
+        setReconnectAttempt(0);
         setError(null);
       } else if (event.data.type === 'vnc-disconnected') {
         setIsConnected(false);
+        setIsConnecting(false);
         if (event.data.clean) {
           toast.info('Disconnected from remote desktop');
         } else {
-          setError('Connection lost. Please try reconnecting.');
+          attemptAutoReconnect();
         }
       } else if (event.data.type === 'vnc-error') {
         setError(event.data.error);
@@ -113,10 +162,15 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [attemptAutoReconnect]);
 
   const handleDisconnect = useCallback(async () => {
-    console.log('Disconnect button clicked, sessionId:', sessionId);
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    setIsReconnecting(false);
+    setReconnectAttempt(0);
     try {
       // Disconnect VNC in iframe
       if (iframeRef.current?.contentWindow) {
@@ -137,6 +191,12 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
   }, [sessionId, disconnect, router]);
 
   const handleReconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    setIsReconnecting(false);
+    setReconnectAttempt(0);
     setIsConnecting(true);
     setError(null);
     // Reload iframe to reconnect
@@ -235,11 +295,11 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
               <div
                 className={cn(
                   'w-2 h-2 rounded-full',
-                  isConnected ? 'bg-status-success animate-pulse' : 'bg-status-warning'
+                  isConnected ? 'bg-status-success animate-pulse' : isReconnecting ? 'bg-status-warning animate-pulse' : 'bg-status-warning'
                 )}
               />
               <span className="text-sm text-foreground">
-                {isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
+                {isConnected ? 'Connected' : isReconnecting ? `Reconnecting (${reconnectAttempt}/${maxReconnectAttempts})...` : isConnecting ? 'Connecting...' : 'Disconnected'}
               </span>
             </div>
 
@@ -273,7 +333,7 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
               disabled={isConnecting}
               title="Reconnect"
             >
-              <RefreshCw className={cn('w-4 h-4', isConnecting && 'animate-spin')} />
+              <RefreshCw className={cn('w-4 h-4', (isConnecting || isReconnecting) && 'animate-spin')} />
             </Button>
             <Button
               variant="ghost"
@@ -314,17 +374,17 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
       )}
 
       {/* Loading overlay */}
-      {isConnecting && (
+      {(isConnecting || isReconnecting) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 pt-12">
           <div className="flex flex-col items-center gap-4">
             <Spinner size="lg" className="text-white" />
-            <p className="text-white text-sm">Connecting to remote desktop...</p>
+            <p className="text-white text-sm">{isReconnecting ? `Reconnecting (attempt ${reconnectAttempt}/${maxReconnectAttempts})...` : 'Connecting to remote desktop...'}</p>
           </div>
         </div>
       )}
 
       {/* Error overlay */}
-      {error && vncUrl && (
+      {error && vncUrl && !isReconnecting && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 pt-12">
           <Card className="max-w-md text-center">
             <div className="p-8">

@@ -88,8 +88,8 @@ export class SessionController {
     // Start heartbeat checker
     this.startHeartbeatChecker();
 
-    // Clean up any orphaned containers on startup
-    await this.cleanupOrphanedContainers();
+    // Discover existing workers for session recovery
+    await this.discoverExistingWorkers();
 
     console.log('[Controller] Session controller started');
   }
@@ -304,10 +304,11 @@ export class SessionController {
   }
 
   /**
-   * Clean up orphaned containers on startup
+   * Discover and re-register existing worker containers on startup
+   * Enables session recovery after controller/backend restarts
    */
-  private async cleanupOrphanedContainers(): Promise<void> {
-    console.log('[Controller] Checking for orphaned containers...');
+  private async discoverExistingWorkers(): Promise<void> {
+    console.log('[Controller] Discovering existing worker containers...');
 
     try {
       const containers = await this.docker.listContainers({
@@ -317,16 +318,62 @@ export class SessionController {
         },
       });
 
+      let running = 0;
+      let stopped = 0;
+
       for (const containerInfo of containers) {
         const sessionId = containerInfo.Labels?.['clouddesk.session.id'];
-        if (sessionId && !this.activeContainers.has(sessionId)) {
-          console.log(`[Controller] Removing orphaned container: ${containerInfo.Id.substring(0, 12)}`);
-          await this.stopAndRemoveContainer(containerInfo.Id);
+        const containerId = containerInfo.Id;
+
+        if (!sessionId) {
+          await this.stopAndRemoveContainer(containerId);
+          continue;
+        }
+
+        if (containerInfo.State === 'running') {
+          // Re-register running container
+          this.activeContainers.set(sessionId, containerId);
+          this.lastHeartbeats.set(sessionId, Date.now());
+          running++;
+          console.log(`[Controller] Re-registered worker for session ${sessionId}`);
+
+          // Update Redis
+          const hostPort = this.extractHostPort(containerInfo);
+          if (hostPort) {
+            await this.updateRedisWorkerInfo(sessionId, containerId, hostPort);
+          }
+        } else {
+          // Clean up stopped container
+          await this.stopAndRemoveContainer(containerId);
+          stopped++;
         }
       }
+
+      console.log(`[Controller] Discovery: ${running} running, ${stopped} cleaned`);
     } catch (error) {
-      console.error('[Controller] Error cleaning up orphaned containers:', error);
+      console.error('[Controller] Error discovering workers:', error);
     }
+  }
+
+  private extractHostPort(containerInfo: Docker.ContainerInfo): number | null {
+    const ports = containerInfo.Ports;
+    if (ports?.length > 0) {
+      const p = ports.find((x) => x.PrivatePort === 8080);
+      return p?.PublicPort || null;
+    }
+    return null;
+  }
+
+  private async updateRedisWorkerInfo(sessionId: string, containerId: string, hostPort: number): Promise<void> {
+    const key = `session:${sessionId}`;
+    await this.redis.hset(key, {
+      workerId: containerId.substring(0, 12),
+      workerUrl: 'localhost',
+      workerPort: hostPort.toString(),
+      status: 'connected',
+      lastHeartbeat: new Date().toISOString(),
+    });
+    await this.redis.expire(key, 86400);
   }
 
   /**

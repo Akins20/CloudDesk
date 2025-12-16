@@ -5,6 +5,7 @@ import { HTTP_STATUS, ERROR_CODES } from '../config/constants';
 import { ConnectSessionDTO } from '../types';
 import { logger } from '../utils/logger';
 import { User } from '../models/User';
+import { sessionRecoveryService } from '../services/sessionRecoveryService';
 
 /**
  * Connect to an instance (create session)
@@ -312,6 +313,43 @@ export const getSessionHistory = asyncHandler(async (req: Request, res: Response
   });
 });
 
+
+/**
+ * Get recoverable sessions
+ * GET /api/sessions/recoverable
+ */
+export const getRecoverableSessions = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { userId } = (req as AuthRequest).user;
+
+  const sessions = await sessionRecoveryService.getRecoverableSessions(userId);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: sessions.map((session) => ({
+      id: session._id.toString(),
+      instanceId: session.instanceId,
+      status: session.status,
+      lastActivityAt: session.lastActivityAt,
+      createdAt: session.createdAt,
+    })),
+  });
+});
+
+/**
+ * Get session health/recovery status
+ * GET /api/sessions/:sessionId/status
+ */
+export const getSessionStatus = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { sessionId } = req.params;
+
+  const status = await sessionRecoveryService.checkWorkerHealth(sessionId);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: status,
+  });
+});
+
 export default {
   connect,
   disconnect,
@@ -321,4 +359,6 @@ export default {
   getStats,
   disconnectAll,
   getSessionHistory,
+  getRecoverableSessions,
+  getSessionStatus,
 };

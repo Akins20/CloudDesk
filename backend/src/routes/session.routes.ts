@@ -57,6 +57,7 @@ router.get('/active', sessionController.getActiveSessions);
  * @access  Private
  */
 router.get('/stats', sessionController.getStats);
+/** * @route   GET /api/sessions/recoverable * @desc    Get user's recoverable sessions * @access  Private */router.get('/recoverable', sessionController.getRecoverableSessions);
 
 /**
  * @route   GET /api/sessions/history

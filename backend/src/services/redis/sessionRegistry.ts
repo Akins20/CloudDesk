@@ -3,7 +3,7 @@ import { env } from '../../config/environment';
 import { logger } from '../../utils/logger';
 
 // Session status types
-export type SessionStatus = 'creating' | 'connecting' | 'connected' | 'disconnecting' | 'disconnected' | 'error';
+export type SessionStatus = 'creating' | 'connecting' | 'connected' | 'recoverable' | 'disconnecting' | 'disconnected' | 'error';
 
 // Session routing info stored in Redis
 export interface SessionRouting {
