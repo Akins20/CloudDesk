@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, toast } from '@/components/ui';
+import { Button, toast } from '@/components/ui';
 import { useLicenseStore } from '@/lib/stores/license.store';
 
 const PRICING = {
@@ -58,202 +58,293 @@ export default function BillingPage() {
     }).format(price);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusStyles = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-status-success/20 text-status-success';
+        return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'past_due':
-        return 'bg-status-warning/20 text-status-warning';
+        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
       default:
-        return 'bg-status-error/20 text-status-error';
+        return 'bg-red-500/20 text-red-400 border-red-500/30';
     }
   };
 
   if (isLoading) {
     return (
-      <div className="text-center py-16 text-muted-foreground">
-        Loading billing information...
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/50">Loading billing information...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-2 text-foreground">Billing</h1>
-      <p className="text-muted-foreground mb-8">
-        Manage your subscription and billing information.
-      </p>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Billing</h1>
+        <p className="text-white/60">
+          Manage your subscription and billing information.
+        </p>
+      </div>
 
       {/* Current Subscription */}
       {subscription && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Current Subscription</CardTitle>
-            <CardDescription>Your active CloudDesk plan</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold capitalize text-foreground">{subscription.tier}</p>
-                <p className="text-sm text-muted-foreground">
+        <div className="mb-8 p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white">Current Subscription</h2>
+            <span className={`text-xs px-2.5 py-1 rounded-full border ${getStatusStyles(subscription.status)}`}>
+              {subscription.status.replace('_', ' ')}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl font-bold text-white capitalize">{subscription.tier}</span>
+                <span className="text-sm text-white/50">
                   {subscription.billingCycle === 'yearly' ? 'Annual' : 'Monthly'} billing
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(subscription.status)}`}>
-                    {subscription.status.replace('_', ' ')}
-                  </span>
-                  {subscription.cancelAtPeriodEnd && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-status-warning/20 text-status-warning">
-                      Cancels at period end
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Current period ends: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-                </p>
+                </span>
               </div>
-              <Button onClick={handleManageBilling} isLoading={portalLoading}>
-                Manage Subscription
-              </Button>
+              {subscription.cancelAtPeriodEnd && (
+                <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 mb-2">
+                  Cancels at period end
+                </span>
+              )}
+              <p className="text-sm text-white/50">
+                Current period ends: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <Button
+              onClick={handleManageBilling}
+              isLoading={portalLoading}
+              className="bg-white/10 border border-white/20 hover:bg-white/20"
+            >
+              Manage Subscription
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Available Plans */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{subscription ? 'Change Plan' : 'Choose a Plan'}</CardTitle>
-          <CardDescription>
+      <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-white">
+            {subscription ? 'Change Plan' : 'Choose a Plan'}
+          </h2>
+          <p className="text-sm text-white/50">
             {subscription
               ? 'Upgrade or downgrade your subscription'
               : 'Get started with a CloudDesk subscription'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Team Plan */}
-            <div className="border border-border rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-2 text-foreground">Team</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                For growing teams
-              </p>
-              <div className="mb-4">
-                <span className="text-3xl font-bold text-foreground">{formatPrice(PRICING.team.monthly)}</span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                or {formatPrice(PRICING.team.yearly)}/year (save 17%)
-              </p>
-              <ul className="text-sm space-y-2 mb-6">
-                <li className="flex items-center gap-2 text-foreground">
-                  <CheckIcon /> Up to 25 users
-                </li>
-                <li className="flex items-center gap-2 text-foreground">
-                  <CheckIcon /> Up to 50 instances
-                </li>
-                <li className="flex items-center gap-2 text-foreground">
-                  <CheckIcon /> 10 concurrent sessions
-                </li>
-                <li className="flex items-center gap-2 text-foreground">
-                  <CheckIcon /> Priority email support
-                </li>
-              </ul>
-              <div className="space-y-2">
-                <Button
-                  className="w-full"
-                  onClick={() => handleSubscribe('team', 'monthly')}
-                  isLoading={checkoutLoading}
-                  disabled={subscription?.tier === 'team'}
-                >
-                  {subscription?.tier === 'team' ? 'Current Plan' : 'Subscribe Monthly'}
-                </Button>
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => handleSubscribe('team', 'yearly')}
-                  isLoading={checkoutLoading}
-                  disabled={subscription?.tier === 'team'}
-                >
-                  Subscribe Yearly
-                </Button>
-              </div>
-            </div>
+          </p>
+        </div>
 
-            {/* Enterprise Plan */}
-            <div className="border rounded-lg p-6 border-primary ring-2 ring-primary">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xl font-bold text-foreground">Enterprise</h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          {/* Team Plan */}
+          <div className={`rounded-xl p-6 transition-all ${
+            subscription?.tier === 'team'
+              ? 'bg-blue-500/10 border-2 border-blue-500/50'
+              : 'bg-white/5 border border-white/10 hover:bg-white/10'
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Team</h3>
+              {subscription?.tier === 'team' && (
+                <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">
+                  Current Plan
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-white/50 mb-4">For growing teams</p>
+
+            <div className="mb-1">
+              <span className="text-3xl font-bold text-white">{formatPrice(PRICING.team.monthly)}</span>
+              <span className="text-white/50">/month</span>
+            </div>
+            <p className="text-sm text-white/40 mb-6">
+              or {formatPrice(PRICING.team.yearly)}/year (save 17%)
+            </p>
+
+            <ul className="space-y-3 mb-6">
+              {[
+                'Up to 25 users',
+                'Up to 50 instances',
+                '10 concurrent sessions',
+                'Priority email support',
+              ].map((feature, idx) => (
+                <li key={idx} className="flex items-center gap-2 text-sm text-white/70">
+                  <CheckIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+
+            <div className="space-y-2">
+              <Button
+                className="w-full"
+                onClick={() => handleSubscribe('team', 'monthly')}
+                isLoading={checkoutLoading}
+                disabled={subscription?.tier === 'team'}
+              >
+                {subscription?.tier === 'team' ? 'Current Plan' : 'Subscribe Monthly'}
+              </Button>
+              <Button
+                className="w-full border-white/20"
+                variant="outline"
+                onClick={() => handleSubscribe('team', 'yearly')}
+                isLoading={checkoutLoading}
+                disabled={subscription?.tier === 'team'}
+              >
+                Subscribe Yearly
+              </Button>
+            </div>
+          </div>
+
+          {/* Enterprise Plan */}
+          <div className={`rounded-xl p-6 transition-all ${
+            subscription?.tier === 'enterprise'
+              ? 'bg-purple-500/10 border-2 border-purple-500/50'
+              : 'bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-2 border-purple-500/30'
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Enterprise</h3>
+              {subscription?.tier === 'enterprise' ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">
+                  Current Plan
+                </span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white">
                   Popular
                 </span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                For large organizations
-              </p>
-              <div className="mb-4">
-                <span className="text-3xl font-bold text-foreground">{formatPrice(PRICING.enterprise.monthly)}</span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                or {formatPrice(PRICING.enterprise.yearly)}/year (save 17%)
-              </p>
-              <ul className="text-sm space-y-2 mb-6">
-                <li className="flex items-center gap-2 text-foreground">
-                  <CheckIcon /> Unlimited users
+              )}
+            </div>
+            <p className="text-sm text-white/50 mb-4">For large organizations</p>
+
+            <div className="mb-1">
+              <span className="text-3xl font-bold text-white">{formatPrice(PRICING.enterprise.monthly)}</span>
+              <span className="text-white/50">/month</span>
+            </div>
+            <p className="text-sm text-white/40 mb-6">
+              or {formatPrice(PRICING.enterprise.yearly)}/year (save 17%)
+            </p>
+
+            <ul className="space-y-3 mb-6">
+              {[
+                'Unlimited users',
+                'Unlimited instances',
+                'Unlimited sessions',
+                '24/7 dedicated support',
+                'SLA guarantee',
+              ].map((feature, idx) => (
+                <li key={idx} className="flex items-center gap-2 text-sm text-white/70">
+                  <CheckIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  {feature}
                 </li>
-                <li className="flex items-center gap-2 text-foreground">
-                  <CheckIcon /> Unlimited instances
-                </li>
-                <li className="flex items-center gap-2 text-foreground">
-                  <CheckIcon /> Unlimited sessions
-                </li>
-                <li className="flex items-center gap-2 text-foreground">
-                  <CheckIcon /> 24/7 dedicated support
-                </li>
-                <li className="flex items-center gap-2 text-foreground">
-                  <CheckIcon /> SLA guarantee
-                </li>
-              </ul>
-              <div className="space-y-2">
-                <Button
-                  className="w-full"
-                  onClick={() => handleSubscribe('enterprise', 'monthly')}
-                  isLoading={checkoutLoading}
-                  disabled={subscription?.tier === 'enterprise'}
-                >
-                  {subscription?.tier === 'enterprise' ? 'Current Plan' : 'Subscribe Monthly'}
-                </Button>
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => handleSubscribe('enterprise', 'yearly')}
-                  isLoading={checkoutLoading}
-                  disabled={subscription?.tier === 'enterprise'}
-                >
-                  Subscribe Yearly
-                </Button>
-              </div>
+              ))}
+            </ul>
+
+            <div className="space-y-2">
+              <Button
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 border-0"
+                onClick={() => handleSubscribe('enterprise', 'monthly')}
+                isLoading={checkoutLoading}
+                disabled={subscription?.tier === 'enterprise'}
+              >
+                {subscription?.tier === 'enterprise' ? 'Current Plan' : 'Subscribe Monthly'}
+              </Button>
+              <Button
+                className="w-full border-white/20"
+                variant="outline"
+                onClick={() => handleSubscribe('enterprise', 'yearly')}
+                isLoading={checkoutLoading}
+                disabled={subscription?.tier === 'enterprise'}
+              >
+                Subscribe Yearly
+              </Button>
             </div>
           </div>
+        </div>
 
-          {/* Free Tier Info */}
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <h4 className="font-medium mb-2 text-foreground">Community (Free)</h4>
-            <p className="text-sm text-muted-foreground">
-              No subscription required for basic usage: up to 5 users, 10 instances, and 3 concurrent sessions.
-            </p>
+        {/* Free Tier Info */}
+        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <span className="text-green-400">&#10003;</span>
+            </div>
+            <h4 className="font-medium text-white">Community (Free)</h4>
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-sm text-white/50 ml-11">
+            No subscription required for basic usage: up to 5 users, 10 instances, and 3 concurrent sessions.
+          </p>
+        </div>
+      </div>
+
+      {/* Payment Methods & Invoices */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <CreditCardIcon className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">Payment Methods</h3>
+              <p className="text-sm text-white/50">Manage cards and payment options</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleManageBilling}
+            isLoading={portalLoading}
+            className="w-full border-white/20"
+          >
+            Manage Payment Methods
+          </Button>
+        </div>
+
+        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <ReceiptIcon className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">Invoices</h3>
+              <p className="text-sm text-white/50">View and download past invoices</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleManageBilling}
+            isLoading={portalLoading}
+            className="w-full border-white/20"
+          >
+            View Invoices
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
 
-function CheckIcon() {
+function CheckIcon({ className }: { className?: string }) {
   return (
-    <svg className="w-4 h-4 text-status-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+function CreditCardIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+    </svg>
+  );
+}
+
+function ReceiptIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z" />
     </svg>
   );
 }

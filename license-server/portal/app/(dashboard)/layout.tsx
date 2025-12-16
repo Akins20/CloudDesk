@@ -43,12 +43,15 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 w-64 border-r bg-card">
+      <aside className="fixed inset-y-0 left-0 w-64 border-r border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b">
-            <Link href="/dashboard" className="text-xl font-bold">
-              CloudDesk
+          <div className="p-6 border-b border-white/10">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                <span className="text-lg">&#9729;</span>
+              </div>
+              <span className="text-xl font-bold text-white">CloudDesk</span>
             </Link>
           </div>
 
@@ -61,10 +64,10 @@ export default function DashboardLayout({
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all',
                     isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? 'bg-white/10 text-white border border-white/20 shadow-lg shadow-white/5'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white'
                   )}
                 >
                   <item.icon className="w-5 h-5" />
@@ -74,13 +77,38 @@ export default function DashboardLayout({
             })}
           </nav>
 
-          {/* User section */}
-          <div className="p-4 border-t">
-            <div className="mb-3">
-              <p className="text-sm font-medium">{customer?.firstName} {customer?.lastName}</p>
-              <p className="text-xs text-muted-foreground truncate">{customer?.email}</p>
+          {/* Upgrade prompt */}
+          <div className="p-4">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30">
+              <p className="text-sm font-medium text-white mb-2">Upgrade to Team</p>
+              <p className="text-xs text-white/60 mb-3">Unlock more features and higher limits.</p>
+              <Link href="/pricing">
+                <Button size="sm" className="w-full bg-white/10 border border-white/20 hover:bg-white/20">
+                  View Plans
+                </Button>
+              </Link>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="w-full justify-start">
+          </div>
+
+          {/* User section */}
+          <div className="p-4 border-t border-white/10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
+                {customer?.firstName?.[0]}{customer?.lastName?.[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {customer?.firstName} {customer?.lastName}
+                </p>
+                <p className="text-xs text-white/50 truncate">{customer?.email}</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="w-full justify-start text-white/60 hover:text-white hover:bg-white/5"
+            >
               <LogoutIcon className="w-4 h-4 mr-2" />
               Sign Out
             </Button>
@@ -90,7 +118,7 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <main className="pl-64">
-        <div className="p-8">
+        <div className="p-8 min-h-screen">
           {children}
         </div>
       </main>

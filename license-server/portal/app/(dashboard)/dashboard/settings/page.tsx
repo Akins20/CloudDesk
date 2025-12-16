@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Button, Input, toast } from '@/components/ui';
+import { Button, Input, toast } from '@/components/ui';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import api, { ApiResponse } from '@/lib/api/client';
 
@@ -89,112 +89,222 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-2">Settings</h1>
-      <p className="text-muted-foreground mb-8">
-        Manage your account settings and preferences.
-      </p>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
+        <p className="text-white/60">
+          Manage your account settings and preferences.
+        </p>
+      </div>
 
       <div className="space-y-6 max-w-2xl">
         {/* Profile Settings */}
-        <Card>
+        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
           <form onSubmit={handleProfileSubmit}>
-            <CardHeader>
-              <CardTitle>Profile</CardTitle>
-              <CardDescription>Update your account information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-2xl text-white font-bold">
+                {customer?.firstName?.[0]}{customer?.lastName?.[0]}
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Profile Information</h2>
+                <p className="text-sm text-white/50">Update your account details</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-1.5">
+                    First Name
+                  </label>
+                  <Input
+                    value={profile.firstName}
+                    onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-1.5">
+                    Last Name
+                  </label>
+                  <Input
+                    value={profile.lastName}
+                    onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1.5">
+                  Organization
+                </label>
                 <Input
-                  label="First Name"
-                  value={profile.firstName}
-                  onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
-                />
-                <Input
-                  label="Last Name"
-                  value={profile.lastName}
-                  onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                  value={profile.organizationName}
+                  onChange={(e) => setProfile({ ...profile, organizationName: e.target.value })}
+                  className="bg-white/5 border-white/10 text-white"
                 />
               </div>
-              <Input
-                label="Organization"
-                value={profile.organizationName}
-                onChange={(e) => setProfile({ ...profile, organizationName: e.target.value })}
-              />
-              <Input
-                label="Email"
-                value={customer?.email || ''}
-                disabled
-                helperText="Email cannot be changed"
-              />
-            </CardContent>
-            <CardFooter>
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1.5">
+                  Email
+                </label>
+                <Input
+                  value={customer?.email || ''}
+                  disabled
+                  className="bg-white/5 border-white/10 text-white/50"
+                />
+                <p className="text-xs text-white/40 mt-1">Email cannot be changed</p>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-white/10">
               <Button type="submit" isLoading={isLoading}>
                 Save Changes
               </Button>
-            </CardFooter>
+            </div>
           </form>
-        </Card>
+        </div>
 
         {/* Password Change */}
-        <Card>
+        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
           <form onSubmit={handlePasswordSubmit}>
-            <CardHeader>
-              <CardTitle>Change Password</CardTitle>
-              <CardDescription>Update your account password</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
-                label="Current Password"
-                type="password"
-                value={passwords.currentPassword}
-                onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-                autoComplete="current-password"
-              />
-              <Input
-                label="New Password"
-                type="password"
-                value={passwords.newPassword}
-                onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                helperText="At least 8 characters"
-                autoComplete="new-password"
-              />
-              <Input
-                label="Confirm New Password"
-                type="password"
-                value={passwords.confirmPassword}
-                onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                autoComplete="new-password"
-              />
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" isLoading={passwordLoading}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                <LockIcon className="w-5 h-5 text-yellow-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Change Password</h2>
+                <p className="text-sm text-white/50">Update your account password</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1.5">
+                  Current Password
+                </label>
+                <Input
+                  type="password"
+                  value={passwords.currentPassword}
+                  onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                  autoComplete="current-password"
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1.5">
+                  New Password
+                </label>
+                <Input
+                  type="password"
+                  value={passwords.newPassword}
+                  onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                  autoComplete="new-password"
+                  className="bg-white/5 border-white/10 text-white"
+                />
+                <p className="text-xs text-white/40 mt-1">At least 8 characters</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1.5">
+                  Confirm New Password
+                </label>
+                <Input
+                  type="password"
+                  value={passwords.confirmPassword}
+                  onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                  autoComplete="new-password"
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <Button type="submit" isLoading={passwordLoading} className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/30">
                 Change Password
               </Button>
-            </CardFooter>
+            </div>
           </form>
-        </Card>
+        </div>
 
         {/* Account Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Account ID</span>
-              <span className="font-mono">{customer?.id}</span>
+        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <InfoIcon className="w-5 h-5 text-blue-400" />
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Member since</span>
-              <span>{customer?.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A'}</span>
+            <h2 className="text-lg font-semibold text-white">Account Information</h2>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between items-center py-2 border-b border-white/5">
+              <span className="text-sm text-white/50">Account ID</span>
+              <span className="font-mono text-sm text-white/80">{customer?.id}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Email verified</span>
-              <span>{customer?.emailVerified ? 'Yes' : 'No'}</span>
+            <div className="flex justify-between items-center py-2 border-b border-white/5">
+              <span className="text-sm text-white/50">Member since</span>
+              <span className="text-sm text-white/80">
+                {customer?.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A'}
+              </span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-sm text-white/50">Email verified</span>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                customer?.emailVerified
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-yellow-500/20 text-yellow-400'
+              }`}>
+                {customer?.emailVerified ? 'Verified' : 'Not verified'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="p-6 rounded-2xl bg-red-500/5 border border-red-500/20 backdrop-blur-xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+              <WarningIcon className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Danger Zone</h2>
+              <p className="text-sm text-white/50">Irreversible account actions</p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+            <p className="text-sm text-white/70 mb-3">
+              Deleting your account will permanently remove all your data, including licenses and subscription information. This action cannot be undone.
+            </p>
+            <Button variant="outline" className="border-red-500/30 text-red-400 hover:bg-red-500/10">
+              Delete Account
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+function LockIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+  );
+}
+
+function InfoIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function WarningIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
   );
 }
