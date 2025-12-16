@@ -1,7 +1,9 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import routes from './routes';
+import { adminRoutes } from './admin';
 import { errorHandler, notFoundHandler, apiLimiter } from './middleware';
 import { logger } from './utils/logger';
 import { env } from './config/environment';
@@ -21,7 +23,7 @@ export const createApp = (): Application => {
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"],
         imgSrc: ["'self'", 'data:', 'https:'],
         connectSrc: ["'self'", 'ws:', 'wss:'],
       },
@@ -29,12 +31,12 @@ export const createApp = (): Application => {
     crossOriginEmbedderPolicy: false,
   }));
 
-  // CORS configuration - restrict to allowed origins
+  // CORS configuration - restrict to allowed origins (only for /api routes)
   const allowedOrigins = env.CORS_ORIGINS
     ? env.CORS_ORIGINS.split(',').map(o => o.trim())
     : ['http://localhost:3000', 'http://localhost:3001']; // Default for development
 
-  app.use(cors({
+  const corsMiddleware = cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, etc.) in development
       if (!origin && env.NODE_ENV === 'development') {
@@ -52,11 +54,17 @@ export const createApp = (): Application => {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-  }));
+  });
+
+  // Apply CORS only to /api routes (admin routes don't need CORS - same origin)
+  app.use('/api', corsMiddleware);
 
   // Body parsing middleware
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  // Cookie parser for admin sessions
+  app.use(cookieParser());
 
   // Request logging
   app.use((req, res, next) => {
@@ -80,6 +88,9 @@ export const createApp = (): Application => {
 
   // API routes
   app.use('/api', routes);
+
+  // Admin dashboard (HTML interface)
+  app.use('/admin', adminRoutes);
 
   // Root endpoint
   app.get('/', (_req, res) => {
