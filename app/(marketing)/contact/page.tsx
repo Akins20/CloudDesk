@@ -57,7 +57,7 @@ export default function ContactPage() {
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-4">Message Sent!</h1>
           <p className="text-lg text-muted-foreground mb-8">
-            Thanks for reaching out. We'll get back to you within 24-48 hours.
+            Thanks for reaching out. We&apos;ll get back to you within 24-48 hours.
           </p>
           <Link href="/">
             <Button size="lg">Back to Home</Button>
@@ -79,7 +79,7 @@ export default function ContactPage() {
             Get in Touch
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Have a question, suggestion, or need help? We're here for you.
+            Have a question, suggestion, or need help? We&apos;re here for you.
           </p>
         </div>
       </section>
