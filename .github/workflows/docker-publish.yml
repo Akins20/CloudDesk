@@ -101,7 +101,6 @@ jobs:
           labels: ${{ steps.meta-ghcr.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64
 
   build-frontend:
     name: Build Frontend Image
@@ -168,7 +167,6 @@ jobs:
           labels: ${{ steps.meta-ghcr.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64
           build-args: |
             NEXT_PUBLIC_API_URL=/api
             NEXT_PUBLIC_APP_NAME=CloudDesk
@@ -238,7 +236,6 @@ jobs:
           labels: ${{ steps.meta-ghcr.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64
 
   build-session-worker:
     name: Build Session Worker Image
@@ -305,7 +302,6 @@ jobs:
           labels: ${{ steps.meta-ghcr.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64
 
   create-release:
     name: Create Release
