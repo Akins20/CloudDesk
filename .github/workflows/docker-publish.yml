@@ -28,7 +28,7 @@ env:
   # GitHub Container Registry
   GHCR_REGISTRY: ghcr.io
   # Docker Hub
-  DOCKERHUB_NAMESPACE: clouddesk
+  DOCKERHUB_NAMESPACE: akins20
   # Image names
   BACKEND_IMAGE: backend
   FRONTEND_IMAGE: frontend
