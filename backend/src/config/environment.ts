@@ -160,9 +160,9 @@ export function loadEnvironment(): Environment {
 
     // Rate Limiting
     RATE_LIMIT_WINDOW_MS: getEnvNumber('RATE_LIMIT_WINDOW_MS', 900000),
-    RATE_LIMIT_MAX_REQUESTS: getEnvNumber('RATE_LIMIT_MAX_REQUESTS', 100),
-    AUTH_RATE_LIMIT_MAX: getEnvNumber('AUTH_RATE_LIMIT_MAX', 60),
-    API_RATE_LIMIT_MAX: getEnvNumber('API_RATE_LIMIT_MAX', 300),
+    RATE_LIMIT_MAX_REQUESTS: getEnvNumber('RATE_LIMIT_MAX_REQUESTS', 300),
+    AUTH_RATE_LIMIT_MAX: getEnvNumber('AUTH_RATE_LIMIT_MAX', 180),
+    API_RATE_LIMIT_MAX: getEnvNumber('API_RATE_LIMIT_MAX', 900),
 
     // CORS
     CORS_ORIGINS: getEnvVariable('CORS_ORIGINS', 'http://localhost:3000,http://localhost:3001'),

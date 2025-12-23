@@ -17,6 +17,18 @@ export const API_ENDPOINTS = {
     BASE: '/api/instances',
     BY_ID: (id: string) => `/api/instances/${id}`,
     TEST_CONNECTION: (id: string) => `/api/instances/${id}/test-connection`,
+    // Instance Features
+    OS_INFO: (id: string) => `/api/instances/${id}/os-info`,
+    PREFLIGHT: (id: string) => `/api/instances/${id}/preflight`,
+    DRY_RUN: (id: string) => `/api/instances/${id}/provision/dry-run`,
+    SOFTWARE_TEMPLATES: (id: string) => `/api/instances/${id}/software/templates`,
+    INSTALL_SOFTWARE: (id: string) => `/api/instances/${id}/software/install`,
+    // SFTP File Operations
+    FILES_LIST: (id: string) => `/api/instances/${id}/files/list`,
+    FILES_DOWNLOAD: (id: string) => `/api/instances/${id}/files/download`,
+    FILES_UPLOAD: (id: string) => `/api/instances/${id}/files/upload`,
+    FILES_DELETE: (id: string) => `/api/instances/${id}/files/delete`,
+    FILES_MKDIR: (id: string) => `/api/instances/${id}/files/mkdir`,
   },
   // Sessions
   SESSIONS: {
@@ -28,6 +40,9 @@ export const API_ENDPOINTS = {
     HISTORY: '/api/sessions/history',
     ACTIVE: '/api/sessions/active',
     DISCONNECT_ALL: '/api/sessions/disconnect-all',
+    // Clipboard Sync
+    CLIPBOARD_GET: (id: string) => `/api/sessions/${id}/clipboard`,
+    CLIPBOARD_SET: (id: string) => `/api/sessions/${id}/clipboard`,
   },
   // Users
   USERS: {

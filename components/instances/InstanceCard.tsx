@@ -14,10 +14,16 @@ import {
   Wifi,
   WifiOff,
   Plug,
+  Activity,
+  Package,
+  Folder,
 } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { Card, StatusBadge, Badge, Button, ConfirmModal } from '@/components/ui';
+import { PreflightCheckModal } from './PreflightCheckModal';
+import { SoftwareTemplatesModal } from './SoftwareTemplatesModal';
+import { FileBrowserModal } from './FileBrowserModal';
 import { useInstanceStore, useSessionStore, toast } from '@/lib/stores';
 import { ROUTES, CLOUD_PROVIDERS, SUCCESS_MESSAGES } from '@/lib/utils/constants';
 import { formatRelativeTime, cn } from '@/lib/utils/helpers';
@@ -33,6 +39,9 @@ export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
   const { deleteInstance, isDeleting, testConnection, isTesting } = useInstanceStore();
   const { activeSessions } = useSessionStore();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPreflightModal, setShowPreflightModal] = useState(false);
+  const [showSoftwareModal, setShowSoftwareModal] = useState(false);
+  const [showFileBrowserModal, setShowFileBrowserModal] = useState(false);
 
   const handleTestConnection = async () => {
     try {
@@ -88,7 +97,7 @@ export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
           </div>
 
           <Menu as="div" className="relative">
-            <Menu.Button className="p-1 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100">
+            <Menu.Button className="p-1 rounded-lg hover:bg-muted transition-colors">
               <MoreVertical className="w-4 h-4 text-muted-foreground" />
             </Menu.Button>
             <Transition
@@ -118,6 +127,49 @@ export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
                       </button>
                     )}
                   </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={() => setShowPreflightModal(true)}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors',
+                          active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                        )}
+                      >
+                        <Activity className="w-4 h-4" />
+                        System Check
+                      </button>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={() => setShowSoftwareModal(true)}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors',
+                          active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                        )}
+                      >
+                        <Package className="w-4 h-4" />
+                        Dev Tools
+                      </button>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={() => setShowFileBrowserModal(true)}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors',
+                          active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                        )}
+                      >
+                        <Folder className="w-4 h-4" />
+                        File Browser
+                      </button>
+                    )}
+                  </Menu.Item>
+                  <div className="my-1 border-t border-border" />
                   <Menu.Item>
                     {({ active }) => (
                       <button
@@ -225,6 +277,27 @@ export function InstanceCard({ instance, onConnect }: InstanceCardProps) {
         confirmText="Delete"
         variant="danger"
         isLoading={isDeleting}
+      />
+
+      <PreflightCheckModal
+        isOpen={showPreflightModal}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setShowPreflightModal(false)}
+      />
+
+      <SoftwareTemplatesModal
+        isOpen={showSoftwareModal}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setShowSoftwareModal(false)}
+      />
+
+      <FileBrowserModal
+        isOpen={showFileBrowserModal}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setShowFileBrowserModal(false)}
       />
     </>
   );

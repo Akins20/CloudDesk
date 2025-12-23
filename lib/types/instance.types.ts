@@ -63,3 +63,109 @@ export interface TestConnectionResult {
     vncInstalled?: boolean;
   };
 }
+
+// OS Information
+export interface OSInfo {
+  distroFamily: string;
+  distroName: string;
+  distroId: string;
+  version: string;
+  versionId: string;
+  packageManager: string;
+  kernel: string;
+  architecture: string;
+  detectedAt?: string;
+}
+
+// Pre-flight Check Results
+export interface PreflightResult {
+  success: boolean;
+  sshConnected: boolean;
+  osInfo?: OSInfo;
+  systemResources: {
+    diskSpaceGB: number;
+    memoryMB: number;
+    cpuCores: number;
+  };
+  vncStatus: {
+    installed: boolean;
+    running: boolean;
+    displays: number[];
+  };
+  desktopStatus: {
+    xfceInstalled: boolean;
+    lxdeInstalled: boolean;
+  };
+  sudoAvailable: boolean;
+  networkStatus: {
+    internetAccess: boolean;
+    dnsWorking: boolean;
+  };
+  errors: string[];
+  warnings: string[];
+  recommendations: string[];
+}
+
+// Dry-Run Provisioning Results
+export interface DryRunResult {
+  osInfo: OSInfo;
+  packagesToInstall: {
+    vnc: string[];
+    xserver: string[];
+    desktop: string[];
+  };
+  estimatedDiskUsageMB: number;
+  estimatedTimeMinutes: number;
+  commands: string[];
+  warnings: string[];
+}
+
+// Dev Software Templates
+export interface SoftwareTemplate {
+  templateId: string;
+  name: string;
+  description: string;
+  installed: boolean;
+  installedAt?: string;
+}
+
+export interface InstallSoftwareResult {
+  success: boolean;
+  templateId: string;
+  packagesInstalled: string[];
+  postInstallRan: boolean;
+  errors: string[];
+  duration: number;
+}
+
+// SFTP File Operations
+export interface FileInfo {
+  filename: string;
+  path: string;
+  size: number;
+  modifyTime: string;
+  accessTime: string;
+  isDirectory: boolean;
+  isFile: boolean;
+  isSymlink: boolean;
+  permissions: string;
+  owner: number;
+  group: number;
+}
+
+export interface DirectoryListing {
+  path: string;
+  files: FileInfo[];
+  totalSize: number;
+  fileCount: number;
+  directoryCount: number;
+}
+
+export interface TransferResult {
+  success: boolean;
+  filename: string;
+  remotePath: string;
+  size: number;
+  duration: number;
+  error?: string;
+}

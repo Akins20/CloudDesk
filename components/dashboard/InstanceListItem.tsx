@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronUp, Play, Settings, Trash2, X, Save, Lock, Shield } from 'lucide-react';
+import { ChevronDown, ChevronUp, Play, Settings, Trash2, X, Save, Lock, Shield, Activity, Package, Folder, MoreVertical } from 'lucide-react';
+import { Menu, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 import { Instance, UpdateInstanceData } from '@/lib/types';
 import { Button, Input, Modal } from '@/components/ui';
 import { InstanceExpandedDetails } from './InstanceExpandedDetails';
+import { PreflightCheckModal, SoftwareTemplatesModal, FileBrowserModal } from '@/components/instances';
 import { useSessionStore, useInstanceStore, toast } from '@/lib/stores';
 import { formatRelativeTime } from '@/lib/utils/helpers';
 import { ROUTES, SUCCESS_MESSAGES, ERROR_MESSAGES, CLOUD_PROVIDERS, AUTH_TYPES } from '@/lib/utils/constants';
@@ -42,6 +45,9 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
   const [connectPassword, setConnectPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [showPreflightModal, setShowPreflightModal] = useState(false);
+  const [showSoftwareModal, setShowSoftwareModal] = useState(false);
+  const [showFileBrowserModal, setShowFileBrowserModal] = useState(false);
   const { connect } = useSessionStore();
   const { deleteInstance, updateInstance } = useInstanceStore();
 
@@ -221,17 +227,96 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
               <Settings className="w-4 h-4" />
             </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-status-error hover:bg-status-error/10"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete();
-              }}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            {/* Dropdown menu for additional actions */}
+            <Menu as="div" className="relative">
+              <Menu.Button
+                as="div"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              >
+                <Button variant="ghost" size="sm">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 mt-1 w-48 origin-top-right rounded-lg bg-card border border-border shadow-lg focus:outline-none overflow-hidden z-50">
+                  <div className="p-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPreflightModal(true);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                            active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <Activity className="w-4 h-4" />
+                          System Check
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowSoftwareModal(true);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                            active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <Package className="w-4 h-4" />
+                          Dev Tools
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowFileBrowserModal(true);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                            active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <Folder className="w-4 h-4" />
+                          File Browser
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <div className="my-1 border-t border-border" />
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete();
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                            active ? 'bg-status-error/10 text-status-error' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
+                      )}
+                    </Menu.Item>
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
 
             {isExpanded ? (
               <ChevronUp className="w-4 h-4 text-muted-foreground" />
@@ -440,6 +525,30 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
           </div>
         </div>
       </Modal>
+
+      {/* Preflight Check Modal */}
+      <PreflightCheckModal
+        isOpen={showPreflightModal}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setShowPreflightModal(false)}
+      />
+
+      {/* Software Templates Modal */}
+      <SoftwareTemplatesModal
+        isOpen={showSoftwareModal}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setShowSoftwareModal(false)}
+      />
+
+      {/* File Browser Modal */}
+      <FileBrowserModal
+        isOpen={showFileBrowserModal}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setShowFileBrowserModal(false)}
+      />
     </>
   );
 }

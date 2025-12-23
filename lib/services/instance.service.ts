@@ -8,6 +8,13 @@ import type {
   InstanceQuery,
   TestConnectionResult,
   PaginatedResponse,
+  OSInfo,
+  PreflightResult,
+  DryRunResult,
+  SoftwareTemplate,
+  InstallSoftwareResult,
+  DirectoryListing,
+  TransferResult,
 } from '@/lib/types';
 
 export const instanceService = {
@@ -64,5 +71,122 @@ export const instanceService = {
       return response.data;
     }
     throw new Error(response.error?.message || 'Failed to test connection');
+  },
+
+  // ========== Instance Features ==========
+
+  async getOSInfo(id: string): Promise<OSInfo> {
+    const response = await api.get<OSInfo>(API_ENDPOINTS.INSTANCES.OS_INFO(id));
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to get OS info');
+  },
+
+  async runPreflightCheck(id: string, password: string): Promise<PreflightResult> {
+    const response = await api.post<PreflightResult>(
+      API_ENDPOINTS.INSTANCES.PREFLIGHT(id),
+      { password }
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to run preflight check');
+  },
+
+  async dryRunProvisioning(id: string, password: string, desktopEnvironment: string = 'xfce'): Promise<DryRunResult> {
+    const response = await api.post<DryRunResult>(
+      API_ENDPOINTS.INSTANCES.DRY_RUN(id),
+      { password, desktopEnvironment }
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to run dry-run provisioning');
+  },
+
+  async getSoftwareTemplates(id: string): Promise<SoftwareTemplate[]> {
+    const response = await api.get<SoftwareTemplate[]>(
+      API_ENDPOINTS.INSTANCES.SOFTWARE_TEMPLATES(id)
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to get software templates');
+  },
+
+  async installSoftware(id: string, templateId: string, password: string): Promise<InstallSoftwareResult> {
+    // Use longer timeout for software installation (10 minutes)
+    const response = await api.post<InstallSoftwareResult>(
+      API_ENDPOINTS.INSTANCES.INSTALL_SOFTWARE(id),
+      { templateId, password },
+      { timeout: 600000 } as never
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to install software');
+  },
+
+  // ========== SFTP File Operations ==========
+
+  async listDirectory(id: string, password: string, path: string = '~'): Promise<DirectoryListing> {
+    const response = await api.post<DirectoryListing>(
+      API_ENDPOINTS.INSTANCES.FILES_LIST(id),
+      { password, path }
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to list directory');
+  },
+
+  async downloadFile(id: string, password: string, remotePath: string): Promise<Blob> {
+    const response = await api.post<{ data: string; size: number; filename: string }>(
+      API_ENDPOINTS.INSTANCES.FILES_DOWNLOAD(id),
+      { password, remotePath }
+    );
+    if (response.success && response.data) {
+      // Convert base64 to blob
+      const byteCharacters = atob(response.data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      return new Blob([byteArray]);
+    }
+    throw new Error(response.error?.message || 'Failed to download file');
+  },
+
+  async uploadFile(id: string, password: string, remotePath: string, content: string): Promise<TransferResult> {
+    const response = await api.post<TransferResult>(
+      API_ENDPOINTS.INSTANCES.FILES_UPLOAD(id),
+      { password, remotePath, content }
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to upload file');
+  },
+
+  async deleteFile(id: string, password: string, remotePath: string, recursive: boolean = false): Promise<void> {
+    const response = await api.post<void>(
+      API_ENDPOINTS.INSTANCES.FILES_DELETE(id),
+      { password, remotePath, recursive }
+    );
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Failed to delete file');
+    }
+  },
+
+  async createDirectory(id: string, password: string, remotePath: string): Promise<void> {
+    const response = await api.post<void>(
+      API_ENDPOINTS.INSTANCES.FILES_MKDIR(id),
+      { password, remotePath }
+    );
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Failed to create directory');
+    }
   },
 };
