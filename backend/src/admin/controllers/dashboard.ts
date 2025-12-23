@@ -5,8 +5,9 @@
 
 import { Request, Response } from 'express';
 import { logger } from '../../utils/logger';
-import { renderPage, statCard } from '../templates';
+import { renderPage, statCard, licenseCard } from '../templates';
 import { getDashboardStats, formatBytes, getUserAnalytics, getSessionAnalytics } from '../services/analytics';
+import { licenseService } from '../../services/licenseService';
 
 /**
  * Render dashboard page
@@ -177,8 +178,8 @@ export const dashboard = async (_req: Request, res: Response): Promise<void> => 
         </div>
       </div>
 
-      <!-- Quick Links -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Quick Links & License -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <a href="/admin/users" class="glass-card rounded-xl p-6 hover:bg-white/5 transition-colors group">
           <div class="flex items-center justify-between">
             <div>
@@ -214,6 +215,8 @@ export const dashboard = async (_req: Request, res: Response): Promise<void> => 
             </svg>
           </div>
         </a>
+
+        ${licenseCard(licenseService.getLicenseSummary())}
       </div>
     `;
 

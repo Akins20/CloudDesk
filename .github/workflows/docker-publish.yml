@@ -1,0 +1,327 @@
+# ============================================================================
+# CloudDesk Docker Image Build & Publish
+# Builds and pushes Docker images for self-hosted deployments
+# Publishes to both GitHub Container Registry (ghcr.io) and Docker Hub
+# ============================================================================
+
+name: Build and Publish Docker Images
+
+on:
+  push:
+    branches:
+      - main
+      - self-hosted
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      push_images:
+        description: 'Push images to registry'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  # GitHub Container Registry
+  GHCR_REGISTRY: ghcr.io
+  # Docker Hub
+  DOCKERHUB_NAMESPACE: akins20
+  # Image names
+  BACKEND_IMAGE: backend
+  FRONTEND_IMAGE: frontend
+  SESSION_CONTROLLER_IMAGE: session-controller
+  SESSION_WORKER_IMAGE: session-worker
+
+jobs:
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for GHCR
+        id: meta-ghcr
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.GHCR_REGISTRY }}/${{ github.repository }}/${{ env.BACKEND_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
+
+      - name: Extract metadata for Docker Hub
+        id: meta-dockerhub
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKERHUB_NAMESPACE }}/${{ env.BACKEND_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ steps.meta-ghcr.outputs.tags }}
+            ${{ steps.meta-dockerhub.outputs.tags }}
+          labels: ${{ steps.meta-ghcr.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for GHCR
+        id: meta-ghcr
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.GHCR_REGISTRY }}/${{ github.repository }}/${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
+
+      - name: Extract metadata for Docker Hub
+        id: meta-dockerhub
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKERHUB_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ steps.meta-ghcr.outputs.tags }}
+            ${{ steps.meta-dockerhub.outputs.tags }}
+          labels: ${{ steps.meta-ghcr.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_API_URL=/api
+            NEXT_PUBLIC_APP_NAME=CloudDesk
+
+  build-session-controller:
+    name: Build Session Controller Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for GHCR
+        id: meta-ghcr
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.GHCR_REGISTRY }}/${{ github.repository }}/${{ env.SESSION_CONTROLLER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
+
+      - name: Extract metadata for Docker Hub
+        id: meta-dockerhub
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKERHUB_NAMESPACE }}/${{ env.SESSION_CONTROLLER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+
+      - name: Build and push Session Controller
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/session-controller
+          file: ./backend/session-controller/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ steps.meta-ghcr.outputs.tags }}
+            ${{ steps.meta-dockerhub.outputs.tags }}
+          labels: ${{ steps.meta-ghcr.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-session-worker:
+    name: Build Session Worker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for GHCR
+        id: meta-ghcr
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.GHCR_REGISTRY }}/${{ github.repository }}/${{ env.SESSION_WORKER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
+
+      - name: Extract metadata for Docker Hub
+        id: meta-dockerhub
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKERHUB_NAMESPACE }}/${{ env.SESSION_WORKER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+
+      - name: Build and push Session Worker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/session-worker
+          file: ./backend/session-worker/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ steps.meta-ghcr.outputs.tags }}
+            ${{ steps.meta-dockerhub.outputs.tags }}
+          labels: ${{ steps.meta-ghcr.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-release:
+    name: Create Release
+    needs: [build-backend, build-frontend, build-session-controller, build-session-worker]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          files: |
+            docker-compose.selfhosted.yml
+            .env.selfhosted.example
+            SELF_HOSTING.md
+            helm/clouddesk/Chart.yaml
+            helm/clouddesk/values.yaml

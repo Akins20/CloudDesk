@@ -1,0 +1,249 @@
+# ============================================================================
+# CloudDesk Self-Hosted Docker Compose
+# ============================================================================
+# Complete self-hosted deployment stack including:
+# - Backend API server
+# - MongoDB database
+# - Redis cache/pubsub
+# - Session Controller (manages VNC workers)
+# - Traefik reverse proxy with automatic SSL
+#
+# Quick Start:
+# 1. Copy .env.selfhosted.example to .env and configure
+# 2. Run: docker compose -f docker-compose.selfhosted.yml up -d
+# 3. Access at https://your-domain.com
+# ============================================================================
+
+services:
+  # --------------------------------------------------------------------------
+  # Traefik Reverse Proxy (handles SSL termination)
+  # --------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.0
+    container_name: clouddesk-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certs:/letsencrypt
+    networks:
+      - clouddesk-network
+    labels:
+      - "traefik.enable=true"
+      # Dashboard (optional, remove in production)
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_AUTH:-admin:$$apr1$$xyz$$hash}"
+
+  # --------------------------------------------------------------------------
+  # Redis (Session State & Pub/Sub)
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: clouddesk-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory ${REDIS_MAXMEMORY:-512mb}
+      --maxmemory-policy allkeys-lru
+      ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - clouddesk-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --------------------------------------------------------------------------
+  # MongoDB (Primary Database)
+  # --------------------------------------------------------------------------
+  mongodb:
+    image: mongo:7
+    container_name: clouddesk-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
+      MONGO_INITDB_DATABASE: clouddesk
+    volumes:
+      - mongodb_data:/data/db
+      - ./backend/docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - clouddesk-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # CloudDesk Backend API
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: clouddesk/backend:${VERSION:-latest}
+    container_name: clouddesk-backend
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Core
+      NODE_ENV: production
+      PORT: 3000
+      APP_NAME: ${APP_NAME:-CloudDesk}
+      APP_URL: https://${DOMAIN:-localhost}
+
+      # Database
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-clouddesk}:${MONGO_PASSWORD:?MONGO_PASSWORD is required}@mongodb:27017/clouddesk?authSource=clouddesk
+      REDIS_URL: ${REDIS_PASSWORD:+redis://:$REDIS_PASSWORD@redis:6379}${REDIS_PASSWORD:-redis://redis:6379}
+
+      # Security
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
+      JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-24h}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+      ADMIN_SECRET: ${ADMIN_SECRET:-}
+
+      # Session
+      SESSION_TIMEOUT_MINUTES: ${SESSION_TIMEOUT_MINUTES:-30}
+      MAX_SESSIONS_PER_USER: ${MAX_SESSIONS_PER_USER:-5}
+
+      # Rate Limiting
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+
+      # CORS
+      CORS_ORIGINS: https://${DOMAIN:-localhost}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # License
+      LICENSE_KEY: ${LICENSE_KEY:-}
+    networks:
+      - clouddesk-network
+    labels:
+      - "traefik.enable=true"
+      # API routes
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=3000"
+      # Admin routes
+      - "traefik.http.routers.admin.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.admin.entrypoints=websecure"
+      - "traefik.http.routers.admin.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.admin.service=backend"
+      # WebSocket routes for VNC
+      - "traefik.http.routers.vnc.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/vnc`)"
+      - "traefik.http.routers.vnc.entrypoints=websecure"
+      - "traefik.http.routers.vnc.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.vnc.service=backend"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # Session Controller (Manages VNC Worker Containers)
+  # --------------------------------------------------------------------------
+  session-controller:
+    build:
+      context: ./backend/session-controller
+      dockerfile: Dockerfile
+    image: clouddesk/session-controller:${VERSION:-latest}
+    container_name: clouddesk-session-controller
+    restart: unless-stopped
+    user: root  # Required for Docker socket access
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: ${REDIS_PASSWORD:+redis://:$REDIS_PASSWORD@redis:6379}${REDIS_PASSWORD:-redis://redis:6379}
+      WORKER_IMAGE: clouddesk/session-worker:${VERSION:-latest}
+      DOCKER_NETWORK: clouddesk-network
+      PORT_RANGE_START: ${WORKER_PORT_RANGE_START:-8080}
+      PORT_RANGE_END: ${WORKER_PORT_RANGE_END:-8180}
+      HEARTBEAT_TIMEOUT: ${HEARTBEAT_TIMEOUT:-60000}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - clouddesk-network
+
+  # --------------------------------------------------------------------------
+  # Frontend (Next.js - Optional, can be hosted separately)
+  # --------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://${DOMAIN:-localhost}
+    image: clouddesk/frontend:${VERSION:-latest}
+    container_name: clouddesk-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: https://${DOMAIN:-localhost}
+    networks:
+      - clouddesk-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      # Lower priority than backend API routes
+      - "traefik.http.routers.frontend.priority=1"
+
+# ----------------------------------------------------------------------------
+# Volumes
+# ----------------------------------------------------------------------------
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  traefik_certs:
+    driver: local
+
+# ----------------------------------------------------------------------------
+# Networks
+# ----------------------------------------------------------------------------
+networks:
+  clouddesk-network:
+    driver: bridge
+    # Allow external containers (session workers) to join
+    attachable: true

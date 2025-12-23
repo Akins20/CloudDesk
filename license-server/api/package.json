@@ -1,0 +1,48 @@
+{
+  "name": "clouddesk-license-server",
+  "version": "1.0.0",
+  "description": "License management server for CloudDesk self-hosted deployments",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "lint": "eslint src --ext .ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.0.3",
+    "ioredis": "^5.3.2",
+    "stripe": "^14.10.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "joi": "^17.11.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "express-rate-limit": "^7.1.5",
+    "winston": "^3.11.0",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1",
+    "nodemailer": "^6.9.7"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.5",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/cors": "^2.8.17",
+    "@types/morgan": "^1.9.9",
+    "@types/uuid": "^9.0.7",
+    "@types/nodemailer": "^6.4.14",
+    "typescript": "^5.3.3",
+    "ts-node-dev": "^2.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

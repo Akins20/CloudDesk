@@ -30,3 +30,12 @@ export {
   inviteLimiter,
   createRateLimiter,
 } from './rateLimiter';
+
+export {
+  attachLicense,
+  requireFeature,
+  checkUserLimit,
+  checkInstanceLimit,
+  checkSessionLimit,
+  requireTier,
+} from './license';

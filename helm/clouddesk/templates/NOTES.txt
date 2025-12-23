@@ -1,0 +1,58 @@
+CloudDesk has been deployed successfully!
+
+{{- if .Values.ingress.enabled }}
+You can access CloudDesk at:
+{{- range .Values.ingress.hosts }}
+  {{- if $.Values.ingress.tls }}
+  https://{{ .host }}
+  {{- else }}
+  http://{{ .host }}
+  {{- end }}
+{{- end }}
+
+{{- else }}
+
+To access CloudDesk, run the following commands:
+
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "clouddesk.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=frontend" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use CloudDesk"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+{{- if not .Values.license.key }}
+
+IMPORTANT: No license key configured!
+CloudDesk will run in Community tier with the following limits:
+- 5 users
+- 10 instances
+- 3 concurrent sessions
+
+To upgrade, purchase a license at https://license.clouddesk.io and update your values:
+
+  helm upgrade {{ .Release.Name }} clouddesk/clouddesk \
+    --set license.key=YOUR_LICENSE_KEY
+
+{{- else }}
+
+License key configured. CloudDesk will validate the license on startup.
+{{- end }}
+
+{{- if .Values.mongodb.enabled }}
+
+MongoDB is running as part of this release.
+{{- else }}
+Using external MongoDB at: {{ .Values.mongodb.external.host }}
+{{- end }}
+
+{{- if .Values.redis.enabled }}
+
+Redis is running as part of this release.
+{{- else }}
+Using external Redis at: {{ .Values.redis.external.host }}
+{{- end }}
+
+For more information, visit:
+- Documentation: https://docs.clouddesk.io
+- GitHub: https://github.com/clouddesk/clouddesk
+- Support: support@clouddesk.io

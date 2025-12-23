@@ -3,6 +3,11 @@
  * Shared layouts, components, and styling
  */
 
+import { env } from '../config/environment';
+
+// Get app name from environment
+const APP_NAME = env.APP_NAME || 'CloudDesk';
+
 // Tailwind config for consistent theming
 const tailwindConfig = `
   tailwind.config = {
@@ -56,7 +61,7 @@ const navigation = (currentPath: string) => `
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
             </svg>
-            CloudDesk
+            ${APP_NAME}
           </a>
           <div class="hidden md:flex space-x-1">
             ${navLink('/admin', 'Dashboard', currentPath, 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6')}
@@ -111,7 +116,7 @@ export const renderPage = (
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} - CloudDesk Admin</title>
+  <title>${title} - ${APP_NAME} Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>${tailwindConfig}</script>
   <style>${sharedStyles}</style>
@@ -126,7 +131,7 @@ export const renderPage = (
   ${isLoggedIn ? `
   <footer class="border-t border-border mt-auto py-6">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <p class="text-center text-muted-foreground text-sm">CloudDesk Admin Dashboard &copy; ${new Date().getFullYear()}</p>
+      <p class="text-center text-muted-foreground text-sm">${APP_NAME} Admin Dashboard &copy; ${new Date().getFullYear()}</p>
     </div>
   </footer>
   ` : ''}
@@ -301,6 +306,70 @@ export const emptyState = (message: string, icon: string = 'M20 13V6a2 2 0 00-2-
   </div>
 `;
 
+/**
+ * License card component
+ */
+export const licenseCard = (license: {
+  tier: string;
+  valid: boolean;
+  expiresAt: string | null;
+  organization: string | null;
+  limits: { users: string; instances: string; sessions: string };
+  features: string[];
+}): string => {
+  const tierColors: Record<string, string> = {
+    community: 'muted-foreground',
+    team: 'status-info',
+    enterprise: 'status-success',
+  };
+  const tierColor = tierColors[license.tier] || 'muted-foreground';
+
+  return `
+    <div class="glass-card rounded-xl p-6">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-semibold">License</h3>
+          <p class="text-sm text-muted-foreground">${license.organization || 'Self-Hosted'}</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-sm font-medium bg-${tierColor}/10 text-${tierColor} capitalize">
+          ${license.tier}
+        </span>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <div class="text-center p-3 bg-muted rounded-lg">
+          <p class="text-lg font-bold">${license.limits.users}</p>
+          <p class="text-xs text-muted-foreground">Users</p>
+        </div>
+        <div class="text-center p-3 bg-muted rounded-lg">
+          <p class="text-lg font-bold">${license.limits.instances}</p>
+          <p class="text-xs text-muted-foreground">Instances</p>
+        </div>
+        <div class="text-center p-3 bg-muted rounded-lg">
+          <p class="text-lg font-bold">${license.limits.sessions}</p>
+          <p class="text-xs text-muted-foreground">Sessions</p>
+        </div>
+      </div>
+
+      ${license.expiresAt ? `
+        <p class="text-xs text-muted-foreground">
+          Expires: ${new Date(license.expiresAt).toLocaleDateString()}
+        </p>
+      ` : `
+        <p class="text-xs text-status-success">Perpetual License</p>
+      `}
+
+      ${license.tier === 'community' ? `
+        <div class="mt-4 pt-4 border-t border-border">
+          <a href="https://clouddesk.io/pricing" target="_blank" class="btn btn-primary w-full text-center block">
+            Upgrade License
+          </a>
+        </div>
+      ` : ''}
+    </div>
+  `;
+};
+
 export default {
   renderPage,
   statCard,
@@ -308,4 +377,5 @@ export default {
   pagination,
   statusBadge,
   emptyState,
+  licenseCard,
 };

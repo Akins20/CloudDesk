@@ -1,0 +1,202 @@
+# CloudDesk Helm Chart Values
+# Default values for clouddesk deployment
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Backend API settings
+backend:
+  replicaCount: 1
+  image:
+    repository: clouddesk/backend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  env: {}
+
+# Frontend settings
+frontend:
+  replicaCount: 1
+  image:
+    repository: clouddesk/frontend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  env:
+    NEXT_PUBLIC_API_URL: ""  # Will be set from ingress
+
+# Session Controller settings
+sessionController:
+  replicaCount: 1
+  image:
+    repository: clouddesk/session-controller
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  # Docker socket for spawning workers
+  dockerSocket:
+    enabled: true
+    hostPath: /var/run/docker.sock
+
+# Session Worker settings (spawned dynamically)
+sessionWorker:
+  image:
+    repository: clouddesk/session-worker
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  portRange:
+    start: 8080
+    end: 8180
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+# MongoDB settings
+mongodb:
+  enabled: true
+  auth:
+    enabled: true
+    rootPassword: ""  # Set via secret
+    username: clouddesk
+    password: ""  # Set via secret
+    database: clouddesk
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+  # External MongoDB (when enabled: false)
+  external:
+    host: ""
+    port: 27017
+    username: ""
+    password: ""
+    database: clouddesk
+
+# Redis settings
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: ""  # Set via secret
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+      storageClass: ""
+  replica:
+    replicaCount: 0
+  # External Redis (when enabled: false)
+  external:
+    host: ""
+    port: 6379
+    password: ""
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "clouddesk-backend"
+  hosts:
+    - host: clouddesk.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /socket.io
+          pathType: Prefix
+          service: backend
+  tls: []
+  #  - secretName: clouddesk-tls
+  #    hosts:
+  #      - clouddesk.example.com
+
+# License configuration
+license:
+  # License key for self-hosted deployment
+  key: ""
+  # License server URL (for validation)
+  serverUrl: "https://clouddesk-production.up.railway.app"
+
+# Security settings
+security:
+  # JWT secrets
+  jwtAccessSecret: ""
+  jwtRefreshSecret: ""
+  # Encryption key for credentials
+  encryptionKey: ""
+
+# Logging
+logging:
+  level: info
+  format: json
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Service account
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Network policies
+networkPolicy:
+  enabled: false
+
+# Health checks
+healthCheck:
+  enabled: true
+  path: /api/health
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3

@@ -65,7 +65,7 @@ export const apiLimiter = createRateLimiter();
  */
 export const authLimiter = createRateLimiter({
   windowMs: RATE_LIMIT_CONSTANTS.AUTH_WINDOW_MS,
-  max: RATE_LIMIT_CONSTANTS.AUTH_MAX_REQUESTS,
+  max: env.AUTH_RATE_LIMIT_MAX || RATE_LIMIT_CONSTANTS.AUTH_MAX_REQUESTS,
   message: 'Too many authentication attempts, please try again later',
 });
 

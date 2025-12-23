@@ -6,6 +6,7 @@ import {
   validateParams,
   sessionLimiter,
   inviteLimiter,
+  checkSessionLimit,
 } from '../middleware';
 import { connectSessionSchema, sessionIdParamSchema } from '../utils/validators';
 
@@ -29,6 +30,7 @@ router.get('/', sessionController.getActiveSessions);
 router.post(
   '/connect',
   sessionLimiter,
+  checkSessionLimit,
   validateBody(connectSessionSchema),
   sessionController.connect
 );

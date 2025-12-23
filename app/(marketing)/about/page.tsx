@@ -201,7 +201,7 @@ export default function AboutPage() {
             Built by Engineers, for Engineers
           </h2>
           <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-            CloudDesk is built by a small, passionate team of engineers who've experienced the pain of complex remote access solutions firsthand. We're building the tool we wished existed.
+            CloudDesk is built by a small, passionate team of engineers who&apos;ve experienced the pain of complex remote access solutions firsthand. We&apos;re building the tool we wished existed.
           </p>
 
           <div className="inline-flex items-center gap-8 p-6 rounded-xl bg-card/50 border border-border">
@@ -242,7 +242,7 @@ export default function AboutPage() {
             Ready to Experience CloudDesk?
           </h2>
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Join developers and teams who've simplified their cloud access. No credit card required.
+            Join developers and teams who&apos;ve simplified their cloud access. No credit card required.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

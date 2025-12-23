@@ -29,7 +29,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">1. Introduction</h2>
               <p className="mb-4">
-                CloudDesk ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our cloud remote desktop service.
+                CloudDesk (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our cloud remote desktop service.
               </p>
               <p>
                 Please read this privacy policy carefully. By using CloudDesk, you consent to the practices described in this policy.
@@ -81,7 +81,7 @@ export default function PrivacyPolicyPage() {
               </ul>
               <div className="mt-4 p-4 rounded-lg bg-card/50 border border-border">
                 <p className="text-foreground font-medium">Important:</p>
-                <p>CloudDesk operates on a "Bring Your Own Cloud" (BYOC) model. Your files, applications, and data remain on YOUR cloud instances. We only facilitate the connection — we never have access to the content on your servers.</p>
+                <p>CloudDesk operates on a &quot;Bring Your Own Cloud&quot; (BYOC) model. Your files, applications, and data remain on YOUR cloud instances. We only facilitate the connection — we never have access to the content on your servers.</p>
               </div>
             </section>
 
@@ -148,7 +148,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">10. Children's Privacy</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">10. Children&apos;s Privacy</h2>
               <p>
                 CloudDesk is not intended for users under 18 years of age. We do not knowingly collect personal information from children. If you believe we have collected information from a child, please contact us immediately.
               </p>
@@ -157,7 +157,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">11. Changes to This Policy</h2>
               <p>
-                We may update this Privacy Policy from time to time. We will notify you of significant changes by posting the new policy on this page and updating the "Last updated" date. Your continued use of CloudDesk after changes constitutes acceptance of the updated policy.
+                We may update this Privacy Policy from time to time. We will notify you of significant changes by posting the new policy on this page and updating the &quot;Last updated&quot; date. Your continued use of CloudDesk after changes constitutes acceptance of the updated policy.
               </p>
             </section>
 

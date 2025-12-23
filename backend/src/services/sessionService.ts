@@ -118,10 +118,15 @@ class SessionService {
       if (!vncInstalled || !desktopInstalled) {
         logVNC('provisioning_required', instanceId);
 
-        const provisionResult = await provisionService.provisionVNC(sshClient, desktopEnvironment);
+        // Pass instanceId for OS detection caching
+        const provisionResult = await provisionService.provisionVNC(sshClient, desktopEnvironment, instanceId);
 
         if (!provisionResult.success) {
-          throw new VNCError(`Failed to provision VNC: ${provisionResult.message}`);
+          // Include OS details in error message for better debugging
+          const osDetails = provisionResult.details
+            ? ` (${provisionResult.details.distro || 'Unknown OS'}, ${provisionResult.details.packageManager || 'Unknown PM'})`
+            : '';
+          throw new VNCError(`Failed to provision VNC: ${provisionResult.message}${osDetails}`);
         }
 
         // Update instance with VNC installed flag
