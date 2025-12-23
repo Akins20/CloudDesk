@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { sessionController, inviteController } from '../controllers';
+import * as instanceFeaturesController from '../controllers/instanceFeaturesController';
 import {
   authenticate,
   validateBody,
@@ -190,6 +191,32 @@ router.patch(
   '/:sessionId/viewers/:viewerId',
   validateParams(sessionIdParamSchema),
   inviteController.updateViewerPermissions
+);
+
+// ============================================
+// Clipboard Sync Routes
+// ============================================
+
+/**
+ * @route   GET /api/sessions/:sessionId/clipboard
+ * @desc    Get remote clipboard content from VNC session
+ * @access  Private
+ */
+router.get(
+  '/:sessionId/clipboard',
+  validateParams(sessionIdParamSchema),
+  instanceFeaturesController.getClipboard
+);
+
+/**
+ * @route   POST /api/sessions/:sessionId/clipboard
+ * @desc    Set remote clipboard content in VNC session
+ * @access  Private
+ */
+router.post(
+  '/:sessionId/clipboard',
+  validateParams(sessionIdParamSchema),
+  instanceFeaturesController.setClipboard
 );
 
 export default router;

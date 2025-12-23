@@ -4,12 +4,36 @@ import {
   AUTH_TYPES,
   DESKTOP_ENVIRONMENTS,
   INSTANCE_STATUSES,
+  DISTRO_FAMILIES,
+  PACKAGE_MANAGERS,
   CloudProvider,
   AuthType,
   DesktopEnvironment,
   InstanceStatus,
+  DistroFamily,
+  PackageManager,
 } from '../config/constants';
 import { encryptionService } from '../services/encryptionService';
+
+// OS Information stored after detection
+export interface IOSInfo {
+  distroFamily: DistroFamily;
+  distroName: string;
+  distroId: string;
+  version: string;
+  versionId: string;
+  packageManager: PackageManager;
+  kernel: string;
+  architecture: string;
+  detectedAt: Date;
+}
+
+// Installed dev software tracking
+export interface IInstalledSoftware {
+  templateId: string;
+  installedAt: Date;
+  status: 'installed' | 'failed' | 'partial';
+}
 
 export interface IInstance {
   userId: mongoose.Types.ObjectId;
@@ -27,6 +51,14 @@ export interface IInstance {
   isVncInstalled: boolean;
   status: InstanceStatus;
   lastConnectedAt?: Date;
+  // OS Information
+  osInfo?: IOSInfo;
+  // Pre-flight check results
+  lastPreflightCheck?: Date;
+  preflightStatus?: 'passed' | 'failed' | 'pending';
+  preflightMessage?: string;
+  // Installed dev software
+  installedSoftware?: IInstalledSoftware[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -123,6 +155,47 @@ const instanceSchema = new Schema<IInstanceDocument>(
     lastConnectedAt: {
       type: Date,
     },
+    // OS Information - populated after first successful connection
+    osInfo: {
+      distroFamily: {
+        type: String,
+        enum: DISTRO_FAMILIES,
+      },
+      distroName: String,
+      distroId: String,
+      version: String,
+      versionId: String,
+      packageManager: {
+        type: String,
+        enum: PACKAGE_MANAGERS,
+      },
+      kernel: String,
+      architecture: String,
+      detectedAt: Date,
+    },
+    // Pre-flight check results
+    lastPreflightCheck: Date,
+    preflightStatus: {
+      type: String,
+      enum: ['passed', 'failed', 'pending'],
+    },
+    preflightMessage: String,
+    // Installed dev software
+    installedSoftware: [{
+      templateId: {
+        type: String,
+        required: true,
+      },
+      installedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      status: {
+        type: String,
+        enum: ['installed', 'failed', 'partial'],
+        default: 'installed',
+      },
+    }],
   },
   {
     timestamps: true,

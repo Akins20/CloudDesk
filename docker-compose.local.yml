@@ -1,0 +1,161 @@
+# ============================================================================
+# CloudDesk Local Development Docker Compose
+# ============================================================================
+# Simplified stack for local testing without SSL/Traefik
+# ============================================================================
+
+services:
+  # --------------------------------------------------------------------------
+  # Redis (Session State & Pub/Sub)
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: clouddesk-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    # Ports not exposed - internal network only
+    volumes:
+      - redis_data:/data
+    networks:
+      - clouddesk-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --------------------------------------------------------------------------
+  # MongoDB (Primary Database)
+  # --------------------------------------------------------------------------
+  mongodb:
+    image: mongo:7
+    container_name: clouddesk-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-adminpassword}
+      MONGO_INITDB_DATABASE: clouddesk
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-clouddesk_app_password}
+    # Ports not exposed - internal network only
+    volumes:
+      - mongodb_data:/data/db
+      - ./backend/docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - clouddesk-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # CloudDesk Backend API
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: clouddesk/backend:local
+    container_name: clouddesk-backend
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      APP_NAME: ${APP_NAME:-CloudDesk}
+      APP_URL: http://localhost:3000
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-clouddesk}:${MONGO_PASSWORD:-clouddesk_app_password}@mongodb:27017/clouddesk?authSource=clouddesk
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev_jwt_access_secret_change_in_production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_jwt_refresh_secret_change_in_production}
+      JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-24h}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-dev_encryption_key_32_chars_here}
+      ADMIN_SECRET: ${ADMIN_SECRET:-admin_secret}
+      SESSION_TIMEOUT_MINUTES: ${SESSION_TIMEOUT_MINUTES:-30}
+      MAX_SESSIONS_PER_USER: ${MAX_SESSIONS_PER_USER:-5}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      LICENSE_KEY: ${LICENSE_KEY:-}
+    networks:
+      - clouddesk-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # Session Controller (Manages VNC Worker Containers)
+  # --------------------------------------------------------------------------
+  session-controller:
+    build:
+      context: ./backend/session-controller
+      dockerfile: Dockerfile
+    image: clouddesk/session-controller:local
+    container_name: clouddesk-session-controller
+    restart: unless-stopped
+    user: root
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+      WORKER_IMAGE: clouddesk/session-worker:local
+      DOCKER_NETWORK: clouddesk-network
+      PORT_RANGE_START: ${WORKER_PORT_RANGE_START:-8080}
+      PORT_RANGE_END: ${WORKER_PORT_RANGE_END:-8180}
+      HEARTBEAT_TIMEOUT: ${HEARTBEAT_TIMEOUT:-60000}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev_jwt_access_secret_change_in_production}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - clouddesk-network
+
+  # --------------------------------------------------------------------------
+  # Frontend (Next.js)
+  # --------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    image: clouddesk/frontend:local
+    container_name: clouddesk-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    networks:
+      - clouddesk-network
+
+# ----------------------------------------------------------------------------
+# Volumes
+# ----------------------------------------------------------------------------
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ----------------------------------------------------------------------------
+# Networks
+# ----------------------------------------------------------------------------
+networks:
+  clouddesk-network:
+    driver: bridge
+    attachable: true

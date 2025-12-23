@@ -37,14 +37,290 @@ export const AUTH_CONSTANTS = {
 // Rate Limiting (lenient settings for development)
 export const RATE_LIMIT_CONSTANTS = {
   AUTH_WINDOW_MS: 60000, // 1 minute
-  AUTH_MAX_REQUESTS: 60, // 60 auth attempts per minute
+  AUTH_MAX_REQUESTS: 180, // 60 auth attempts per minute
   API_WINDOW_MS: 60000, // 1 minute
-  API_MAX_REQUESTS: 300, // 300 requests per minute
+  API_MAX_REQUESTS: 900, // 300 requests per minute
 } as const;
 
 // Desktop Environments
 export const DESKTOP_ENVIRONMENTS = ['xfce', 'lxde'] as const;
 export type DesktopEnvironment = typeof DESKTOP_ENVIRONMENTS[number];
+
+// Linux Distribution Families
+export const DISTRO_FAMILIES = ['debian', 'rhel', 'arch', 'alpine', 'suse', 'unknown'] as const;
+export type DistroFamily = typeof DISTRO_FAMILIES[number];
+
+// Package Managers
+export const PACKAGE_MANAGERS = ['apt', 'dnf', 'yum', 'pacman', 'apk', 'zypper', 'unknown'] as const;
+export type PackageManager = typeof PACKAGE_MANAGERS[number];
+
+// Dev Software Templates - Pre-configured development tool bundles
+export const DEV_SOFTWARE_TEMPLATES = {
+  nodejs: {
+    name: 'Node.js Development',
+    description: 'Node.js, npm, yarn, and common dev tools',
+    packages: {
+      debian: ['nodejs', 'npm', 'git', 'curl', 'build-essential'],
+      rhel: ['nodejs', 'npm', 'git', 'curl', 'gcc', 'gcc-c++', 'make'],
+      arch: ['nodejs', 'npm', 'git', 'curl', 'base-devel'],
+      alpine: ['nodejs', 'npm', 'git', 'curl', 'build-base'],
+      suse: ['nodejs', 'npm', 'git', 'curl', 'gcc', 'gcc-c++', 'make'],
+    },
+    postInstall: ['sudo npm install -g yarn pnpm'],
+  },
+  python: {
+    name: 'Python Development',
+    description: 'Python 3, pip, virtualenv, and dev tools',
+    packages: {
+      debian: ['python3', 'python3-pip', 'python3-venv', 'git', 'build-essential'],
+      rhel: ['python3', 'python3-pip', 'git', 'gcc', 'gcc-c++', 'make'],
+      arch: ['python', 'python-pip', 'git', 'base-devel'],
+      alpine: ['python3', 'py3-pip', 'git', 'build-base'],
+      suse: ['python3', 'python3-pip', 'git', 'gcc', 'gcc-c++', 'make'],
+    },
+    postInstall: ['sudo pip3 install --break-system-packages virtualenv pipenv'],
+  },
+  java: {
+    name: 'Java Development',
+    description: 'OpenJDK, Maven, Gradle',
+    packages: {
+      debian: ['openjdk-17-jdk', 'maven', 'git', 'curl'],
+      rhel: ['java-17-openjdk-devel', 'maven', 'git', 'curl'],
+      arch: ['jdk17-openjdk', 'maven', 'git', 'curl'],
+      alpine: ['openjdk17', 'maven', 'git', 'curl'],
+      suse: ['java-17-openjdk-devel', 'maven', 'git', 'curl'],
+    },
+    postInstall: [],
+  },
+  docker: {
+    name: 'Docker & Containers',
+    description: 'Docker Engine and Docker Compose',
+    packages: {
+      debian: ['docker.io', 'docker-compose', 'git'],
+      rhel: ['docker', 'docker-compose', 'git'],
+      arch: ['docker', 'docker-compose', 'git'],
+      alpine: ['docker', 'docker-compose', 'git'],
+      suse: ['docker', 'docker-compose', 'git'],
+    },
+    postInstall: ['sudo usermod -aG docker $USER'],
+  },
+  webdev: {
+    name: 'Web Development',
+    description: 'Node.js, Git, VS Code CLI, and web tools',
+    packages: {
+      debian: ['nodejs', 'npm', 'git', 'curl', 'nginx', 'build-essential'],
+      rhel: ['nodejs', 'npm', 'git', 'curl', 'nginx', 'gcc', 'make'],
+      arch: ['nodejs', 'npm', 'git', 'curl', 'nginx', 'base-devel'],
+      alpine: ['nodejs', 'npm', 'git', 'curl', 'nginx', 'build-base'],
+      suse: ['nodejs', 'npm', 'git', 'curl', 'nginx', 'gcc', 'make'],
+    },
+    postInstall: ['sudo npm install -g typescript eslint prettier'],
+  },
+  devops: {
+    name: 'DevOps Tools',
+    description: 'Terraform, kubectl, AWS CLI, and infrastructure tools',
+    packages: {
+      debian: ['git', 'curl', 'wget', 'jq', 'unzip'],
+      rhel: ['git', 'curl', 'wget', 'jq', 'unzip'],
+      arch: ['git', 'curl', 'wget', 'jq', 'unzip'],
+      alpine: ['git', 'curl', 'wget', 'jq', 'unzip'],
+      suse: ['git', 'curl', 'wget', 'jq', 'unzip'],
+    },
+    postInstall: [
+      'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl',
+    ],
+  },
+  rust: {
+    name: 'Rust Development',
+    description: 'Rust toolchain with cargo',
+    packages: {
+      debian: ['curl', 'build-essential', 'git'],
+      rhel: ['curl', 'gcc', 'gcc-c++', 'make', 'git'],
+      arch: ['curl', 'base-devel', 'git'],
+      alpine: ['curl', 'build-base', 'git'],
+      suse: ['curl', 'gcc', 'gcc-c++', 'make', 'git'],
+    },
+    postInstall: ['curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'],
+  },
+  go: {
+    name: 'Go Development',
+    description: 'Go language and tools',
+    packages: {
+      debian: ['golang', 'git', 'build-essential'],
+      rhel: ['golang', 'git', 'gcc', 'make'],
+      arch: ['go', 'git', 'base-devel'],
+      alpine: ['go', 'git', 'build-base'],
+      suse: ['go', 'git', 'gcc', 'make'],
+    },
+    postInstall: [],
+  },
+  vscode: {
+    name: 'Visual Studio Code',
+    description: 'VS Code editor with common extensions',
+    packages: {
+      debian: ['wget', 'gpg', 'apt-transport-https'],
+      rhel: ['wget', 'gpg'],
+      arch: ['code'],  // Available in AUR/community
+      alpine: ['wget'],
+      suse: ['wget', 'gpg'],
+    },
+    postInstall: [
+      // Debian/Ubuntu - Add Microsoft repo and install
+      'wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg && sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg && sudo sh -c \'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list\' && rm -f packages.microsoft.gpg && sudo apt update && sudo apt install -y code',
+    ],
+  },
+  git: {
+    name: 'Git & Version Control',
+    description: 'Git with useful configuration and tools',
+    packages: {
+      debian: ['git', 'git-lfs', 'tig', 'gitk'],
+      rhel: ['git', 'git-lfs', 'tig'],
+      arch: ['git', 'git-lfs', 'tig', 'gitk'],
+      alpine: ['git', 'git-lfs', 'tig'],
+      suse: ['git', 'git-lfs', 'tig'],
+    },
+    postInstall: [
+      'git lfs install',
+    ],
+  },
+  database: {
+    name: 'Database Tools',
+    description: 'PostgreSQL, MySQL clients and tools',
+    packages: {
+      debian: ['postgresql-client', 'mysql-client', 'redis-tools', 'sqlite3'],
+      rhel: ['postgresql', 'mysql', 'redis', 'sqlite'],
+      arch: ['postgresql-libs', 'mariadb-clients', 'redis', 'sqlite'],
+      alpine: ['postgresql-client', 'mysql-client', 'redis', 'sqlite'],
+      suse: ['postgresql', 'mariadb-client', 'redis', 'sqlite3'],
+    },
+    postInstall: [],
+  },
+  vim: {
+    name: 'Vim/Neovim',
+    description: 'Vim and Neovim with sensible defaults',
+    packages: {
+      debian: ['vim', 'neovim', 'tmux', 'fzf', 'ripgrep'],
+      rhel: ['vim-enhanced', 'neovim', 'tmux', 'fzf', 'ripgrep'],
+      arch: ['vim', 'neovim', 'tmux', 'fzf', 'ripgrep'],
+      alpine: ['vim', 'neovim', 'tmux', 'fzf', 'ripgrep'],
+      suse: ['vim', 'neovim', 'tmux', 'fzf', 'ripgrep'],
+    },
+    postInstall: [],
+  },
+  cpp: {
+    name: 'C/C++ Development',
+    description: 'GCC, Clang, CMake, and debugging tools',
+    packages: {
+      debian: ['build-essential', 'clang', 'cmake', 'gdb', 'valgrind', 'git'],
+      rhel: ['gcc', 'gcc-c++', 'clang', 'cmake', 'gdb', 'valgrind', 'git'],
+      arch: ['base-devel', 'clang', 'cmake', 'gdb', 'valgrind', 'git'],
+      alpine: ['build-base', 'clang', 'cmake', 'gdb', 'valgrind', 'git'],
+      suse: ['gcc', 'gcc-c++', 'clang', 'cmake', 'gdb', 'valgrind', 'git'],
+    },
+    postInstall: [],
+  },
+  dotnet: {
+    name: '.NET Development',
+    description: '.NET SDK and runtime',
+    packages: {
+      debian: ['wget', 'apt-transport-https'],
+      rhel: ['wget'],
+      arch: ['dotnet-sdk'],
+      alpine: ['wget'],
+      suse: ['wget'],
+    },
+    postInstall: [
+      // Add Microsoft repo for .NET
+      'wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && chmod +x ./dotnet-install.sh && ./dotnet-install.sh --channel 8.0',
+    ],
+  },
+  php: {
+    name: 'PHP Development',
+    description: 'PHP with Composer and common extensions',
+    packages: {
+      debian: ['php', 'php-cli', 'php-mbstring', 'php-xml', 'php-curl', 'php-zip', 'composer', 'git'],
+      rhel: ['php', 'php-cli', 'php-mbstring', 'php-xml', 'php-curl', 'composer', 'git'],
+      arch: ['php', 'composer', 'git'],
+      alpine: ['php', 'php-mbstring', 'php-xml', 'php-curl', 'composer', 'git'],
+      suse: ['php8', 'php8-composer', 'git'],
+    },
+    postInstall: [],
+  },
+  ruby: {
+    name: 'Ruby Development',
+    description: 'Ruby with rbenv and bundler',
+    packages: {
+      debian: ['ruby', 'ruby-dev', 'bundler', 'git', 'build-essential'],
+      rhel: ['ruby', 'ruby-devel', 'rubygem-bundler', 'git', 'gcc', 'make'],
+      arch: ['ruby', 'rubygems', 'git', 'base-devel'],
+      alpine: ['ruby', 'ruby-dev', 'ruby-bundler', 'git', 'build-base'],
+      suse: ['ruby', 'ruby-devel', 'rubygem-bundler', 'git', 'gcc', 'make'],
+    },
+    postInstall: [],
+  },
+  kubernetes: {
+    name: 'Kubernetes Tools',
+    description: 'kubectl, helm, k9s, and cluster management tools',
+    packages: {
+      debian: ['curl', 'git', 'wget'],
+      rhel: ['curl', 'git', 'wget'],
+      arch: ['kubectl', 'helm', 'k9s'],
+      alpine: ['curl', 'git', 'wget'],
+      suse: ['curl', 'git', 'wget'],
+    },
+    postInstall: [
+      // Install kubectl
+      'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && rm kubectl',
+      // Install helm
+      'curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash',
+      // Install k9s
+      'curl -sS https://webinstall.dev/k9s | bash',
+    ],
+  },
+  terraform: {
+    name: 'Terraform & IaC',
+    description: 'Terraform, Ansible, and infrastructure tools',
+    packages: {
+      debian: ['curl', 'git', 'unzip', 'ansible'],
+      rhel: ['curl', 'git', 'unzip', 'ansible'],
+      arch: ['terraform', 'ansible', 'git'],
+      alpine: ['curl', 'git', 'unzip', 'ansible'],
+      suse: ['curl', 'git', 'unzip', 'ansible'],
+    },
+    postInstall: [
+      // Install Terraform
+      'curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o terraform.zip && unzip terraform.zip && sudo mv terraform /usr/local/bin/ && rm terraform.zip',
+    ],
+  },
+  aws: {
+    name: 'AWS CLI & Tools',
+    description: 'AWS CLI v2, SAM CLI, and AWS tools',
+    packages: {
+      debian: ['curl', 'unzip', 'git'],
+      rhel: ['curl', 'unzip', 'git'],
+      arch: ['aws-cli-v2', 'git'],
+      alpine: ['curl', 'unzip', 'git'],
+      suse: ['curl', 'unzip', 'git'],
+    },
+    postInstall: [
+      'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && sudo ./aws/install && rm -rf awscliv2.zip aws',
+    ],
+  },
+  monitoring: {
+    name: 'Monitoring & Debugging',
+    description: 'htop, netcat, tcpdump, and system monitoring',
+    packages: {
+      debian: ['htop', 'iotop', 'iftop', 'netcat-openbsd', 'tcpdump', 'strace', 'lsof', 'net-tools'],
+      rhel: ['htop', 'iotop', 'iftop', 'nc', 'tcpdump', 'strace', 'lsof', 'net-tools'],
+      arch: ['htop', 'iotop', 'iftop', 'gnu-netcat', 'tcpdump', 'strace', 'lsof', 'net-tools'],
+      alpine: ['htop', 'iotop', 'iftop', 'netcat-openbsd', 'tcpdump', 'strace', 'lsof'],
+      suse: ['htop', 'iotop', 'iftop', 'netcat', 'tcpdump', 'strace', 'lsof', 'net-tools'],
+    },
+    postInstall: [],
+  },
+} as const;
+
+export type DevSoftwareTemplate = keyof typeof DEV_SOFTWARE_TEMPLATES;
 
 // Cloud Providers
 export const CLOUD_PROVIDERS = ['ec2', 'oci'] as const;
