@@ -3,6 +3,8 @@ import { DesktopEnvironment } from '../config/constants';
 import { logger, logVNC } from '../utils/logger';
 import { sshService } from './sshService';
 import { vncService } from './vncService';
+import { osDetector, OSInfo } from '../utils/osDetector';
+import { packageManagerService } from '../utils/packageManager';
 
 interface ProvisionResult {
   success: boolean;
@@ -19,7 +21,43 @@ interface SystemInfo {
 
 class ProvisionService {
   /**
-   * Detect Ubuntu version
+   * Cached OS info to avoid repeated detection
+   */
+  private osInfoCache: Map<string, { osInfo: OSInfo; timestamp: number }> = new Map();
+  private readonly CACHE_TTL = 300000; // 5 minutes
+
+  /**
+   * Detect and cache OS information
+   */
+  async detectOS(client: Client, instanceId?: string): Promise<OSInfo> {
+    // Check cache first
+    if (instanceId) {
+      const cached = this.osInfoCache.get(instanceId);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+        logger.debug('Using cached OS info for instance:', instanceId);
+        return cached.osInfo;
+      }
+    }
+
+    const osInfo = await osDetector.detectOS(client);
+
+    // Cache the result
+    if (instanceId) {
+      this.osInfoCache.set(instanceId, { osInfo, timestamp: Date.now() });
+    }
+
+    return osInfo;
+  }
+
+  /**
+   * Clear cached OS info for an instance
+   */
+  clearOSCache(instanceId: string): void {
+    this.osInfoCache.delete(instanceId);
+  }
+
+  /**
+   * Detect Ubuntu version (legacy compatibility)
    */
   async detectUbuntuVersion(client: Client): Promise<string> {
     try {
@@ -40,25 +78,16 @@ class ProvisionService {
   }
 
   /**
-   * Get system information
+   * Get system information (legacy compatibility)
    */
   async getSystemInfo(client: Client): Promise<SystemInfo> {
     try {
-      const [osResult, kernelResult, archResult] = await Promise.all([
-        sshService.executeCommand(client, 'cat /etc/os-release | grep -E "^NAME=|^VERSION=" | head -2'),
-        sshService.executeCommand(client, 'uname -r'),
-        sshService.executeCommand(client, 'uname -m'),
-      ]);
-
-      const osInfo = osResult.stdout;
-      const osNameMatch = osInfo.match(/NAME="?([^"\n]+)"?/);
-      const osVersionMatch = osInfo.match(/VERSION="?([^"\n]+)"?/);
-
+      const osInfo = await this.detectOS(client);
       return {
-        osName: osNameMatch ? osNameMatch[1] : 'Unknown',
-        osVersion: osVersionMatch ? osVersionMatch[1] : 'Unknown',
-        kernel: kernelResult.stdout.trim(),
-        architecture: archResult.stdout.trim(),
+        osName: osInfo.distroName,
+        osVersion: osInfo.version,
+        kernel: osInfo.kernel,
+        architecture: osInfo.architecture,
       };
     } catch (error) {
       logger.error('Error getting system info:', error);
@@ -114,23 +143,22 @@ class ProvisionService {
   }
 
   /**
-   * Update package lists
+   * Update package lists (multi-OS)
    */
-  async updatePackageLists(client: Client): Promise<ProvisionResult> {
+  async updatePackageLists(client: Client, osInfo?: OSInfo): Promise<ProvisionResult> {
     try {
       logVNC('updating_packages', 'provision');
 
-      const result = await sshService.executeCommand(
-        client,
-        'sudo apt-get update -qq',
-        { timeout: 120000 }
-      );
+      // Get OS info if not provided
+      const os = osInfo || await this.detectOS(client);
 
-      if (result.code !== 0) {
+      const result = await packageManagerService.updatePackageLists(client, os);
+
+      if (!result.success) {
         return {
           success: false,
-          message: 'Failed to update package lists',
-          details: { stderr: result.stderr },
+          message: result.message,
+          details: { packageManager: os.packageManager },
         };
       }
 
@@ -146,9 +174,9 @@ class ProvisionService {
   }
 
   /**
-   * Install VNC server (TigerVNC)
+   * Install VNC server (multi-OS)
    */
-  async installVNCServer(client: Client): Promise<ProvisionResult> {
+  async installVNCServer(client: Client, osInfo?: OSInfo): Promise<ProvisionResult> {
     try {
       // Check if already installed
       const isInstalled = await vncService.isVNCInstalled(client);
@@ -158,32 +186,43 @@ class ProvisionService {
 
       logVNC('installing_vnc', 'provision');
 
-      // Install TigerVNC
-      const result = await sshService.executeCommand(
-        client,
-        'sudo DEBIAN_FRONTEND=noninteractive apt-get install -y tigervnc-standalone-server tigervnc-common',
-        { timeout: 300000 }
-      );
+      // Get OS info if not provided
+      const os = osInfo || await this.detectOS(client);
 
-      if (result.code !== 0) {
-        // Try alternative package names
-        const altResult = await sshService.executeCommand(
-          client,
-          'sudo DEBIAN_FRONTEND=noninteractive apt-get install -y tightvncserver',
-          { timeout: 300000 }
-        );
-
-        if (altResult.code !== 0) {
-          return {
-            success: false,
-            message: 'Failed to install VNC server',
-            details: { stderr: result.stderr },
-          };
-        }
+      // Check if OS is supported
+      const supportCheck = osDetector.isSupportedForVNC(os);
+      if (!supportCheck.supported) {
+        return {
+          success: false,
+          message: supportCheck.reason || 'Unsupported operating system',
+          details: {
+            distro: os.distroName,
+            distroFamily: os.distroFamily,
+            packageManager: os.packageManager,
+          },
+        };
       }
 
-      logVNC('vnc_installed', 'provision');
-      return { success: true, message: 'VNC server installed successfully' };
+      // Install VNC using the package manager service
+      const result = await packageManagerService.installVNCServer(client, os);
+
+      if (!result.success) {
+        return {
+          success: false,
+          message: result.message,
+          details: {
+            distro: os.distroName,
+            packageManager: os.packageManager,
+          },
+        };
+      }
+
+      logVNC('vnc_installed', 'provision', { vncType: result.vncType });
+      return {
+        success: true,
+        message: 'VNC server installed successfully',
+        details: { vncType: result.vncType },
+      };
     } catch (error) {
       logger.error('Error installing VNC server:', error);
       return {
@@ -195,11 +234,12 @@ class ProvisionService {
   }
 
   /**
-   * Install desktop environment
+   * Install desktop environment (multi-OS)
    */
   async installDesktopEnvironment(
     client: Client,
-    desktop: DesktopEnvironment
+    desktop: DesktopEnvironment,
+    osInfo?: OSInfo
   ): Promise<ProvisionResult> {
     try {
       // Check if already installed
@@ -210,22 +250,19 @@ class ProvisionService {
 
       logVNC('installing_desktop', 'provision', { desktop });
 
-      const packages: Record<DesktopEnvironment, string> = {
-        xfce: 'xfce4 xfce4-goodies xfce4-terminal dbus-x11',
-        lxde: 'lxde lxterminal dbus-x11',
-      };
+      // Get OS info if not provided
+      const os = osInfo || await this.detectOS(client);
 
-      const result = await sshService.executeCommand(
-        client,
-        `sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ${packages[desktop]}`,
-        { timeout: 600000 } // 10 minutes for desktop installation
-      );
+      const result = await packageManagerService.installDesktopEnvironment(client, os, desktop);
 
-      if (result.code !== 0) {
+      if (!result.success) {
         return {
           success: false,
-          message: `Failed to install ${desktop.toUpperCase()}`,
-          details: { stderr: result.stderr },
+          message: `Failed to install ${desktop.toUpperCase()}: ${result.message}`,
+          details: {
+            distro: os.distroName,
+            packageManager: os.packageManager,
+          },
         };
       }
 
@@ -242,20 +279,19 @@ class ProvisionService {
   }
 
   /**
-   * Install X server dependencies
+   * Install X server dependencies (multi-OS)
    */
-  async installXServerDependencies(client: Client): Promise<ProvisionResult> {
+  async installXServerDependencies(client: Client, osInfo?: OSInfo): Promise<ProvisionResult> {
     try {
       logVNC('installing_xserver', 'provision');
 
-      const result = await sshService.executeCommand(
-        client,
-        'sudo DEBIAN_FRONTEND=noninteractive apt-get install -y xorg xauth x11-xserver-utils',
-        { timeout: 300000 }
-      );
+      // Get OS info if not provided
+      const os = osInfo || await this.detectOS(client);
 
-      if (result.code !== 0) {
-        logger.warn('X server dependency installation had issues:', result.stderr);
+      const result = await packageManagerService.installXServerDependencies(client, os);
+
+      if (!result.success) {
+        logger.warn('X server dependency installation had issues:', result.message);
       }
 
       return { success: true, message: 'X server dependencies installed' };
@@ -269,16 +305,37 @@ class ProvisionService {
   }
 
   /**
-   * Full VNC provisioning
+   * Full VNC provisioning (multi-OS)
    */
   async provisionVNC(
     client: Client,
-    desktopEnvironment: DesktopEnvironment = 'xfce'
+    desktopEnvironment: DesktopEnvironment = 'xfce',
+    instanceId?: string
   ): Promise<ProvisionResult> {
     const startTime = Date.now();
 
     try {
       logVNC('provisioning_started', 'provision', { desktopEnvironment });
+
+      // Detect OS first
+      const osInfo = await this.detectOS(client, instanceId);
+      logger.info(`Detected OS: ${osDetector.getOSDescription(osInfo)}`);
+
+      // Check if OS is supported
+      const supportCheck = osDetector.isSupportedForVNC(osInfo);
+      if (!supportCheck.supported) {
+        return {
+          success: false,
+          message: supportCheck.reason || 'Unsupported operating system for VNC provisioning',
+          details: {
+            distro: osInfo.distroName,
+            distroId: osInfo.distroId,
+            distroFamily: osInfo.distroFamily,
+            packageManager: osInfo.packageManager,
+            supportedFamilies: ['debian', 'rhel', 'arch', 'alpine', 'suse'],
+          },
+        };
+      }
 
       // Check disk space (need at least 2GB)
       const diskSpace = await this.checkDiskSpace(client);
@@ -291,22 +348,22 @@ class ProvisionService {
       }
 
       // Update package lists
-      const updateResult = await this.updatePackageLists(client);
+      const updateResult = await this.updatePackageLists(client, osInfo);
       if (!updateResult.success) {
         return updateResult;
       }
 
       // Install X server dependencies
-      await this.installXServerDependencies(client);
+      await this.installXServerDependencies(client, osInfo);
 
       // Install VNC server
-      const vncResult = await this.installVNCServer(client);
+      const vncResult = await this.installVNCServer(client, osInfo);
       if (!vncResult.success) {
         return vncResult;
       }
 
       // Install desktop environment
-      const desktopResult = await this.installDesktopEnvironment(client, desktopEnvironment);
+      const desktopResult = await this.installDesktopEnvironment(client, desktopEnvironment, osInfo);
       if (!desktopResult.success) {
         return desktopResult;
       }
@@ -315,14 +372,21 @@ class ProvisionService {
       logVNC('provisioning_completed', 'provision', {
         desktopEnvironment,
         durationMs: duration,
+        osInfo: {
+          distro: osInfo.distroName,
+          packageManager: osInfo.packageManager,
+        },
       });
 
       return {
         success: true,
-        message: `VNC with ${desktopEnvironment.toUpperCase()} provisioned successfully`,
+        message: `VNC with ${desktopEnvironment.toUpperCase()} provisioned successfully on ${osInfo.distroName}`,
         details: {
           desktopEnvironment,
           durationMs: duration,
+          distro: osInfo.distroName,
+          distroFamily: osInfo.distroFamily,
+          packageManager: osInfo.packageManager,
         },
       };
     } catch (error) {
@@ -351,6 +415,36 @@ class ProvisionService {
     const desktopInstalled = await vncService.isDesktopInstalled(client, desktopEnvironment);
 
     return vncInstalled && desktopInstalled;
+  }
+
+  /**
+   * Get detailed provisioning requirements for an OS
+   */
+  async getProvisioningRequirements(client: Client): Promise<{
+    osInfo: OSInfo;
+    isSupported: boolean;
+    reason?: string;
+    packages: {
+      vnc: string[];
+      xserver: string[];
+      xfce: string[];
+      lxde: string[];
+    };
+  }> {
+    const osInfo = await this.detectOS(client);
+    const supportCheck = osDetector.isSupportedForVNC(osInfo);
+
+    return {
+      osInfo,
+      isSupported: supportCheck.supported,
+      reason: supportCheck.reason,
+      packages: {
+        vnc: packageManagerService.getVNCServerPackages(osInfo).primary,
+        xserver: packageManagerService.getXServerPackages(osInfo),
+        xfce: packageManagerService.getDesktopPackages(osInfo, 'xfce'),
+        lxde: packageManagerService.getDesktopPackages(osInfo, 'lxde'),
+      },
+    };
   }
 }
 
