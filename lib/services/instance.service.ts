@@ -15,6 +15,12 @@ import type {
   InstallSoftwareResult,
   DirectoryListing,
   TransferResult,
+  DatabaseInfo,
+  DatabaseConnection,
+  QueryResult,
+  TableSchema,
+  PortForward,
+  CreatePortForwardData,
 } from '@/lib/types';
 
 export const instanceService = {
@@ -188,5 +194,106 @@ export const instanceService = {
     if (!response.success) {
       throw new Error(response.error?.message || 'Failed to create directory');
     }
+  },
+
+  // ========== Database GUI Operations ==========
+
+  async detectDatabases(id: string, password: string): Promise<DatabaseInfo[]> {
+    const response = await api.post<DatabaseInfo[]>(
+      API_ENDPOINTS.INSTANCES.DATABASE_DETECT(id),
+      { password }
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to detect databases');
+  },
+
+  async listDatabases(id: string, password: string, connection: DatabaseConnection): Promise<string[]> {
+    const response = await api.post<string[]>(
+      API_ENDPOINTS.INSTANCES.DATABASE_LIST(id),
+      { password, connection }
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to list databases');
+  },
+
+  async listTables(id: string, password: string, connection: DatabaseConnection): Promise<string[]> {
+    const response = await api.post<string[]>(
+      API_ENDPOINTS.INSTANCES.DATABASE_TABLES(id),
+      { password, connection }
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to list tables');
+  },
+
+  async getTableSchema(id: string, password: string, connection: DatabaseConnection, tableName: string): Promise<TableSchema> {
+    const response = await api.post<TableSchema>(
+      API_ENDPOINTS.INSTANCES.DATABASE_SCHEMA(id),
+      { password, connection, tableName }
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to get table schema');
+  },
+
+  async executeQuery(id: string, password: string, connection: DatabaseConnection, query: string): Promise<QueryResult> {
+    const response = await api.post<QueryResult>(
+      API_ENDPOINTS.INSTANCES.DATABASE_QUERY(id),
+      { password, connection, query },
+      { timeout: 60000 } as never // 1 minute timeout for queries
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to execute query');
+  },
+
+  // ========== Port Forwarding Operations ==========
+
+  async createPortForward(id: string, password: string, config: CreatePortForwardData): Promise<PortForward> {
+    const response = await api.post<PortForward>(
+      API_ENDPOINTS.INSTANCES.PORT_FORWARD_CREATE(id),
+      { password, ...config }
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to create port forward');
+  },
+
+  async stopPortForward(id: string, forwardId: string): Promise<void> {
+    const response = await api.post<void>(
+      API_ENDPOINTS.INSTANCES.PORT_FORWARD_STOP(id, forwardId),
+      {}
+    );
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Failed to stop port forward');
+    }
+  },
+
+  async listPortForwards(id: string): Promise<PortForward[]> {
+    const response = await api.get<PortForward[]>(
+      API_ENDPOINTS.INSTANCES.PORT_FORWARD_LIST(id)
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.error?.message || 'Failed to list port forwards');
+  },
+
+  async getAvailablePort(id: string): Promise<number> {
+    const response = await api.get<{ port: number }>(
+      API_ENDPOINTS.INSTANCES.PORT_FORWARD_AVAILABLE_PORT(id)
+    );
+    if (response.success && response.data) {
+      return response.data.port;
+    }
+    throw new Error(response.error?.message || 'Failed to get available port');
   },
 };

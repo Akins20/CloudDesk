@@ -5,3 +5,6 @@ export { vncService } from './vncService';
 export { provisionService } from './provisionService';
 export { tunnelService } from './tunnelService';
 export { sessionService } from './sessionService';
+export { databaseService } from './databaseService';
+export { portForwardingService } from './portForwardingService';
+export { terminalService } from './terminalService';

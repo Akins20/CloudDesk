@@ -5,9 +5,15 @@ import { sshService } from '../services/sshService';
 import { preflightService } from '../services/preflightService';
 import { sftpService } from '../services/sftpService';
 import { clipboardService } from '../services/clipboardService';
+import { databaseService, DatabaseConnection } from '../services/databaseService';
+import { portForwardingService } from '../services/portForwardingService';
 import { NotFoundError, ValidationError } from '../utils/errors';
 import { ERROR_CODES, HTTP_STATUS, DEV_SOFTWARE_TEMPLATES, DevSoftwareTemplate } from '../config/constants';
 import { SSHConfig } from '../types';
+import { v4 as uuidv4 } from 'uuid';
+
+// Store active port forwards and SSH clients per user/instance
+const activePortForwards: Map<string, { sshClient: any; forwardIds: string[] }> = new Map();
 
 /**
  * Run pre-flight check on an instance
@@ -580,5 +586,432 @@ export const getOSInfo = asyncHandler(async (req: Request, res: Response) => {
       preflightMessage: instance.preflightMessage,
       installedSoftware: instance.installedSoftware,
     },
+  });
+});
+
+// ============================================
+// Database GUI Features
+// ============================================
+
+/**
+ * Detect available database clients on instance
+ * POST /api/instances/:id/database/detect
+ */
+export const detectDatabases = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { id: instanceId } = req.params;
+  const { password } = req.body;
+
+  if (!password) {
+    throw new ValidationError('Password is required to decrypt credentials');
+  }
+
+  const instance = await Instance.findByUserIdAndId(userId, instanceId);
+  if (!instance) {
+    throw new NotFoundError('Instance not found', ERROR_CODES.INSTANCE_NOT_FOUND);
+  }
+
+  const sshConfig: SSHConfig = {
+    host: instance.host,
+    port: instance.port,
+    username: instance.username,
+  };
+
+  const credential = instance.getFullyDecryptedCredential(password);
+  if (instance.authType === 'key') {
+    sshConfig.privateKey = credential;
+  } else {
+    sshConfig.password = credential;
+  }
+
+  let sshClient;
+  try {
+    sshClient = await sshService.createConnection(sshConfig);
+    const databases = await databaseService.detectDatabases(sshClient);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: databases,
+    });
+  } finally {
+    if (sshClient) {
+      sshService.closeConnection(sshClient);
+    }
+  }
+});
+
+/**
+ * List databases on instance
+ * POST /api/instances/:id/database/list
+ */
+export const listDatabases = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { id: instanceId } = req.params;
+  const { password, connection } = req.body;
+
+  if (!password) {
+    throw new ValidationError('Password is required to decrypt credentials');
+  }
+
+  if (!connection || !connection.type) {
+    throw new ValidationError('Database connection configuration is required');
+  }
+
+  const instance = await Instance.findByUserIdAndId(userId, instanceId);
+  if (!instance) {
+    throw new NotFoundError('Instance not found', ERROR_CODES.INSTANCE_NOT_FOUND);
+  }
+
+  const sshConfig: SSHConfig = {
+    host: instance.host,
+    port: instance.port,
+    username: instance.username,
+  };
+
+  const credential = instance.getFullyDecryptedCredential(password);
+  if (instance.authType === 'key') {
+    sshConfig.privateKey = credential;
+  } else {
+    sshConfig.password = credential;
+  }
+
+  let sshClient;
+  try {
+    sshClient = await sshService.createConnection(sshConfig);
+    const databases = await databaseService.listDatabases(sshClient, connection as DatabaseConnection);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: databases,
+    });
+  } finally {
+    if (sshClient) {
+      sshService.closeConnection(sshClient);
+    }
+  }
+});
+
+/**
+ * List tables/collections in a database
+ * POST /api/instances/:id/database/tables
+ */
+export const listTables = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { id: instanceId } = req.params;
+  const { password, connection } = req.body;
+
+  if (!password) {
+    throw new ValidationError('Password is required to decrypt credentials');
+  }
+
+  if (!connection || !connection.type || !connection.database) {
+    throw new ValidationError('Database connection with database name is required');
+  }
+
+  const instance = await Instance.findByUserIdAndId(userId, instanceId);
+  if (!instance) {
+    throw new NotFoundError('Instance not found', ERROR_CODES.INSTANCE_NOT_FOUND);
+  }
+
+  const sshConfig: SSHConfig = {
+    host: instance.host,
+    port: instance.port,
+    username: instance.username,
+  };
+
+  const credential = instance.getFullyDecryptedCredential(password);
+  if (instance.authType === 'key') {
+    sshConfig.privateKey = credential;
+  } else {
+    sshConfig.password = credential;
+  }
+
+  let sshClient;
+  try {
+    sshClient = await sshService.createConnection(sshConfig);
+    const tables = await databaseService.listTables(sshClient, connection as DatabaseConnection);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: tables,
+    });
+  } finally {
+    if (sshClient) {
+      sshService.closeConnection(sshClient);
+    }
+  }
+});
+
+/**
+ * Get table schema
+ * POST /api/instances/:id/database/schema
+ */
+export const getTableSchema = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { id: instanceId } = req.params;
+  const { password, connection, tableName } = req.body;
+
+  if (!password) {
+    throw new ValidationError('Password is required to decrypt credentials');
+  }
+
+  if (!connection || !connection.type || !tableName) {
+    throw new ValidationError('Database connection and table name are required');
+  }
+
+  const instance = await Instance.findByUserIdAndId(userId, instanceId);
+  if (!instance) {
+    throw new NotFoundError('Instance not found', ERROR_CODES.INSTANCE_NOT_FOUND);
+  }
+
+  const sshConfig: SSHConfig = {
+    host: instance.host,
+    port: instance.port,
+    username: instance.username,
+  };
+
+  const credential = instance.getFullyDecryptedCredential(password);
+  if (instance.authType === 'key') {
+    sshConfig.privateKey = credential;
+  } else {
+    sshConfig.password = credential;
+  }
+
+  let sshClient;
+  try {
+    sshClient = await sshService.createConnection(sshConfig);
+    const schema = await databaseService.getTableSchema(sshClient, connection as DatabaseConnection, tableName);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: schema,
+    });
+  } finally {
+    if (sshClient) {
+      sshService.closeConnection(sshClient);
+    }
+  }
+});
+
+/**
+ * Execute database query
+ * POST /api/instances/:id/database/query
+ */
+export const executeQuery = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { id: instanceId } = req.params;
+  const { password, connection, query } = req.body;
+
+  if (!password) {
+    throw new ValidationError('Password is required to decrypt credentials');
+  }
+
+  if (!connection || !connection.type || !query) {
+    throw new ValidationError('Database connection and query are required');
+  }
+
+  const instance = await Instance.findByUserIdAndId(userId, instanceId);
+  if (!instance) {
+    throw new NotFoundError('Instance not found', ERROR_CODES.INSTANCE_NOT_FOUND);
+  }
+
+  const sshConfig: SSHConfig = {
+    host: instance.host,
+    port: instance.port,
+    username: instance.username,
+  };
+
+  const credential = instance.getFullyDecryptedCredential(password);
+  if (instance.authType === 'key') {
+    sshConfig.privateKey = credential;
+  } else {
+    sshConfig.password = credential;
+  }
+
+  let sshClient;
+  try {
+    sshClient = await sshService.createConnection(sshConfig);
+    const result = await databaseService.executeQuery(sshClient, connection as DatabaseConnection, query);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: result,
+    });
+  } finally {
+    if (sshClient) {
+      sshService.closeConnection(sshClient);
+    }
+  }
+});
+
+// ============================================
+// Port Forwarding Features
+// ============================================
+
+/**
+ * Create a port forward
+ * POST /api/instances/:id/port-forward/create
+ */
+export const createPortForward = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { id: instanceId } = req.params;
+  const { password, localPort, remoteHost, remotePort } = req.body;
+
+  if (!password) {
+    throw new ValidationError('Password is required to decrypt credentials');
+  }
+
+  if (!localPort || !remotePort) {
+    throw new ValidationError('Local and remote ports are required');
+  }
+
+  const instance = await Instance.findByUserIdAndId(userId, instanceId);
+  if (!instance) {
+    throw new NotFoundError('Instance not found', ERROR_CODES.INSTANCE_NOT_FOUND);
+  }
+
+  const sshConfig: SSHConfig = {
+    host: instance.host,
+    port: instance.port,
+    username: instance.username,
+  };
+
+  const credential = instance.getFullyDecryptedCredential(password);
+  if (instance.authType === 'key') {
+    sshConfig.privateKey = credential;
+  } else {
+    sshConfig.password = credential;
+  }
+
+  const forwardKey = `${userId}:${instanceId}`;
+  let clientData = activePortForwards.get(forwardKey);
+
+  try {
+    // Create SSH connection if not exists
+    if (!clientData) {
+      const sshClient = await sshService.createConnection(sshConfig);
+      clientData = { sshClient, forwardIds: [] };
+      activePortForwards.set(forwardKey, clientData);
+    }
+
+    const forwardId = uuidv4();
+    const result = await portForwardingService.createForward(forwardId, clientData.sshClient, {
+      localPort,
+      remoteHost: remoteHost || 'localhost',
+      remotePort,
+    });
+
+    clientData.forwardIds.push(forwardId);
+
+    res.status(HTTP_STATUS.CREATED).json({
+      success: true,
+      data: {
+        ...result,
+        userId,
+        instanceId,
+      },
+    });
+  } catch (error) {
+    // Clean up on error
+    if (clientData && clientData.forwardIds.length === 0) {
+      sshService.closeConnection(clientData.sshClient);
+      activePortForwards.delete(forwardKey);
+    }
+    throw error;
+  }
+});
+
+/**
+ * Stop a port forward
+ * POST /api/instances/:id/port-forward/:forwardId/stop
+ */
+export const stopPortForward = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { id: instanceId, forwardId } = req.params;
+
+  const instance = await Instance.findByUserIdAndId(userId, instanceId);
+  if (!instance) {
+    throw new NotFoundError('Instance not found', ERROR_CODES.INSTANCE_NOT_FOUND);
+  }
+
+  const forwardKey = `${userId}:${instanceId}`;
+  const clientData = activePortForwards.get(forwardKey);
+
+  if (!clientData || !clientData.forwardIds.includes(forwardId)) {
+    throw new NotFoundError('Port forward not found');
+  }
+
+  portForwardingService.stopForward(forwardId);
+  clientData.forwardIds = clientData.forwardIds.filter((id: string) => id !== forwardId);
+
+  // Clean up SSH client if no more forwards
+  if (clientData.forwardIds.length === 0) {
+    sshService.closeConnection(clientData.sshClient);
+    activePortForwards.delete(forwardKey);
+  }
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'Port forward stopped',
+  });
+});
+
+/**
+ * List active port forwards for an instance
+ * GET /api/instances/:id/port-forward/list
+ */
+export const listPortForwards = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { id: instanceId } = req.params;
+
+  const instance = await Instance.findByUserIdAndId(userId, instanceId);
+  if (!instance) {
+    throw new NotFoundError('Instance not found', ERROR_CODES.INSTANCE_NOT_FOUND);
+  }
+
+  const forwardKey = `${userId}:${instanceId}`;
+  const clientData = activePortForwards.get(forwardKey);
+
+  if (!clientData) {
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: [],
+    });
+    return;
+  }
+
+  const forwards = clientData.forwardIds
+    .map((id: string) => portForwardingService.getForwardStatus(id))
+    .filter(Boolean)
+    .map((forward: any) => ({
+      ...forward,
+      userId,
+      instanceId,
+    }));
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: forwards,
+  });
+});
+
+/**
+ * Get an available port for forwarding
+ * GET /api/instances/:id/port-forward/available-port
+ */
+export const getAvailablePort = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.user!;
+  const { id: instanceId } = req.params;
+
+  const instance = await Instance.findByUserIdAndId(userId, instanceId);
+  if (!instance) {
+    throw new NotFoundError('Instance not found', ERROR_CODES.INSTANCE_NOT_FOUND);
+  }
+
+  const port = await portForwardingService.getAvailablePort();
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: { port },
   });
 });

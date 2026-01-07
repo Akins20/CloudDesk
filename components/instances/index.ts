@@ -5,3 +5,6 @@ export { ConnectModal } from './ConnectModal';
 export { PreflightCheckModal } from './PreflightCheckModal';
 export { SoftwareTemplatesModal } from './SoftwareTemplatesModal';
 export { FileBrowserModal } from './FileBrowserModal';
+export { DatabaseModal } from './DatabaseModal';
+export { PortForwardModal } from './PortForwardModal';
+export { TerminalModal } from './TerminalModal';

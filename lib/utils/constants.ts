@@ -29,6 +29,17 @@ export const API_ENDPOINTS = {
     FILES_UPLOAD: (id: string) => `/api/instances/${id}/files/upload`,
     FILES_DELETE: (id: string) => `/api/instances/${id}/files/delete`,
     FILES_MKDIR: (id: string) => `/api/instances/${id}/files/mkdir`,
+    // Database GUI
+    DATABASE_DETECT: (id: string) => `/api/instances/${id}/database/detect`,
+    DATABASE_LIST: (id: string) => `/api/instances/${id}/database/list`,
+    DATABASE_TABLES: (id: string) => `/api/instances/${id}/database/tables`,
+    DATABASE_SCHEMA: (id: string) => `/api/instances/${id}/database/schema`,
+    DATABASE_QUERY: (id: string) => `/api/instances/${id}/database/query`,
+    // Port Forwarding
+    PORT_FORWARD_CREATE: (id: string) => `/api/instances/${id}/port-forward/create`,
+    PORT_FORWARD_STOP: (id: string, forwardId: string) => `/api/instances/${id}/port-forward/${forwardId}/stop`,
+    PORT_FORWARD_LIST: (id: string) => `/api/instances/${id}/port-forward/list`,
+    PORT_FORWARD_AVAILABLE_PORT: (id: string) => `/api/instances/${id}/port-forward/available-port`,
   },
   // Sessions
   SESSIONS: {
