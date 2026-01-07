@@ -169,6 +169,20 @@ export const DEV_SOFTWARE_TEMPLATES = {
       'wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg && sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg && sudo sh -c \'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list\' && rm -f packages.microsoft.gpg && sudo apt update && sudo apt install -y code',
     ],
   },
+  chrome: {
+    name: 'Google Chrome',
+    description: 'Google Chrome browser for web development and testing',
+    packages: {
+      debian: ['wget', 'gnupg'],
+      rhel: ['wget'],
+      arch: ['google-chrome'],
+      alpine: ['chromium'],
+      suse: ['wget'],
+    },
+    postInstall: [
+      'wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O /tmp/chrome.deb && sudo apt install -y /tmp/chrome.deb && rm /tmp/chrome.deb || (wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb -O /tmp/chrome.deb && sudo apt install -y /tmp/chrome.deb && rm /tmp/chrome.deb)',
+    ],
+  },
   git: {
     name: 'Git & Version Control',
     description: 'Git with useful configuration and tools',
