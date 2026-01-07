@@ -89,6 +89,12 @@
                     window.parent.postMessage({ type: 'vnc-error', error: 'Security error: ' + e.detail.reason }, '*');
                 });
 
+                // Handle clipboard from remote
+                rfb.addEventListener('clipboard', (e) => {
+                    console.log('[vnc.html] Clipboard received:', e.detail.text?.substring(0, 50));
+                    window.parent.postMessage({ type: 'vnc-clipboard', text: e.detail.text }, '*');
+                });
+
                 // Expose for parent window control
                 window.vncRFB = rfb;
             } catch (err) {

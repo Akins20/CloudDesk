@@ -9,7 +9,13 @@ import {
   RefreshCw,
   Keyboard,
   Users,
+  Clipboard,
+  ClipboardCopy,
+  ClipboardPaste,
+  Check,
 } from 'lucide-react';
+import { Menu, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 import { Button, Spinner, Card, Badge } from '@/components/ui';
 import { ShareSession } from './ShareSession';
 import { useSessionStore, toast } from '@/lib/stores';
@@ -47,6 +53,8 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
   const [isReconnecting, setIsReconnecting] = useState(false);
   const maxReconnectAttempts = 3;
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [remoteClipboard, setRemoteClipboard] = useState<string>('');
+  const [clipboardCopied, setClipboardCopied] = useState(false);
 
   // Check if session is recoverable and attempt auto-reconnect
   const attemptAutoReconnect = useCallback(async () => {
@@ -223,6 +231,52 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
     }
   }, []);
 
+  // Copy remote clipboard to local
+  const copyFromRemote = useCallback(async () => {
+    try {
+      if (iframeRef.current?.contentWindow) {
+        const rfb = (iframeRef.current.contentWindow as any).vncRFB;
+        if (rfb && remoteClipboard) {
+          await navigator.clipboard.writeText(remoteClipboard);
+          setClipboardCopied(true);
+          toast.success('Copied from remote clipboard');
+          setTimeout(() => setClipboardCopied(false), 2000);
+        } else {
+          toast.error('No clipboard data from remote');
+        }
+      }
+    } catch (err) {
+      toast.error('Failed to copy to clipboard');
+    }
+  }, [remoteClipboard]);
+
+  // Paste local clipboard to remote
+  const pasteToRemote = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (iframeRef.current?.contentWindow) {
+        const rfb = (iframeRef.current.contentWindow as any).vncRFB;
+        if (rfb) {
+          rfb.clipboardPasteFrom(text);
+          toast.success('Pasted to remote clipboard');
+        }
+      }
+    } catch (err) {
+      toast.error('Failed to read clipboard. Allow clipboard access in browser.');
+    }
+  }, []);
+
+  // Listen for clipboard updates from remote via noVNC
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'vnc-clipboard') {
+        setRemoteClipboard(event.data.text || '');
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -317,6 +371,66 @@ export function VNCViewer({ sessionId, websocketUrl, isOwner = true }: VNCViewer
             {isOwner && (
               <ShareSession sessionId={sessionId} isOwner={isOwner} />
             )}
+            {/* Clipboard sync dropdown */}
+            <Menu as="div" className="relative">
+              <Menu.Button as="div">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={!isConnected}
+                  title="Clipboard Sync"
+                >
+                  {clipboardCopied ? (
+                    <Check className="w-4 h-4 text-status-success" />
+                  ) : (
+                    <Clipboard className="w-4 h-4" />
+                  )}
+                </Button>
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 mt-1 w-56 origin-top-right rounded-lg bg-card border border-border shadow-lg focus:outline-none overflow-hidden z-50">
+                  <div className="p-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={copyFromRemote}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors \${
+                            active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <ClipboardCopy className="w-4 h-4" />
+                          Copy from Remote
+                          {remoteClipboard && (
+                            <span className="ml-auto text-xs text-status-success">Has data</span>
+                          )}
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={pasteToRemote}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors \${
+                            active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <ClipboardPaste className="w-4 h-4" />
+                          Paste to Remote
+                        </button>
+                      )}
+                    </Menu.Item>
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
             <Button
               variant="ghost"
               size="sm"

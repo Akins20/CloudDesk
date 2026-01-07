@@ -46,6 +46,7 @@ const TEMPLATE_ICONS: Record<string, typeof Code> = {
   vscode: Terminal,
   git: Terminal,
   vim: Terminal,
+  chrome: Cloud,
   database: Database,
   monitoring: Wrench,
 };
@@ -53,7 +54,7 @@ const TEMPLATE_ICONS: Record<string, typeof Code> = {
 const TEMPLATE_CATEGORIES: Record<string, string[]> = {
   'Languages & Runtimes': ['nodejs', 'python', 'java', 'rust', 'go', 'cpp', 'dotnet', 'php', 'ruby'],
   'DevOps & Cloud': ['docker', 'kubernetes', 'terraform', 'aws', 'devops'],
-  'Development Tools': ['vscode', 'git', 'vim', 'webdev'],
+  'Development Tools': ['vscode', 'git', 'vim', 'webdev', 'chrome'],
   'Data & Monitoring': ['database', 'monitoring'],
 };
 
