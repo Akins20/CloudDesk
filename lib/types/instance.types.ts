@@ -169,3 +169,62 @@ export interface TransferResult {
   duration: number;
   error?: string;
 }
+
+// Database GUI Types
+export type DatabaseType = 'mysql' | 'postgresql' | 'mongodb' | 'sqlite' | 'redis';
+
+export interface DatabaseInfo {
+  type: DatabaseType;
+  name: string;
+  version?: string;
+  isAvailable: boolean;
+  clientPath?: string;
+}
+
+export interface DatabaseConnection {
+  type: DatabaseType;
+  host: string;
+  port: number;
+  database?: string;
+  username?: string;
+  password?: string;
+}
+
+export interface QueryResult {
+  success: boolean;
+  data?: Record<string, unknown>[];
+  columns?: string[];
+  rowCount?: number;
+  affectedRows?: number;
+  executionTime?: number;
+  error?: string;
+}
+
+export interface TableSchema {
+  columns: {
+    name: string;
+    type: string;
+    nullable: boolean;
+  }[];
+}
+
+// Port Forwarding Types
+export interface PortForward {
+  id: string;
+  userId: string;
+  instanceId: string;
+  localPort: number;
+  remoteHost: string;
+  remotePort: number;
+  status: 'active' | 'stopped' | 'error';
+  createdAt: string;
+  connectionCount: number;
+  bytesTransferred: number;
+  error?: string;
+}
+
+export interface CreatePortForwardData {
+  localPort: number;
+  remoteHost?: string;
+  remotePort: number;
+}

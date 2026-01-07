@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronUp, Play, Settings, Trash2, X, Save, Lock, Shield, Activity, Package, Folder, MoreVertical } from 'lucide-react';
+import { ChevronDown, ChevronUp, Play, Settings, Trash2, X, Save, Lock, Shield, Activity, Package, Folder, MoreVertical, Database, ArrowRightLeft, Terminal } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { Instance, UpdateInstanceData } from '@/lib/types';
 import { Button, Input, Modal } from '@/components/ui';
 import { InstanceExpandedDetails } from './InstanceExpandedDetails';
-import { PreflightCheckModal, SoftwareTemplatesModal, FileBrowserModal } from '@/components/instances';
+import { PreflightCheckModal, SoftwareTemplatesModal, FileBrowserModal, DatabaseModal, PortForwardModal, TerminalModal } from '@/components/instances';
 import { useSessionStore, useInstanceStore, toast } from '@/lib/stores';
 import { formatRelativeTime } from '@/lib/utils/helpers';
 import { ROUTES, SUCCESS_MESSAGES, ERROR_MESSAGES, CLOUD_PROVIDERS, AUTH_TYPES } from '@/lib/utils/constants';
@@ -48,6 +48,9 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
   const [showPreflightModal, setShowPreflightModal] = useState(false);
   const [showSoftwareModal, setShowSoftwareModal] = useState(false);
   const [showFileBrowserModal, setShowFileBrowserModal] = useState(false);
+  const [showDatabaseModal, setShowDatabaseModal] = useState(false);
+  const [showPortForwardModal, setShowPortForwardModal] = useState(false);
+  const [showTerminalModal, setShowTerminalModal] = useState(false);
   const { connect } = useSessionStore();
   const { deleteInstance, updateInstance } = useInstanceStore();
 
@@ -293,6 +296,54 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
                         >
                           <Folder className="w-4 h-4" />
                           File Browser
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDatabaseModal(true);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                            active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <Database className="w-4 h-4" />
+                          Database GUI
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPortForwardModal(true);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                            active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <ArrowRightLeft className="w-4 h-4" />
+                          Port Forwarding
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowTerminalModal(true);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                            active ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
+                          <Terminal className="w-4 h-4" />
+                          Terminal
                         </button>
                       )}
                     </Menu.Item>
@@ -548,6 +599,30 @@ export function InstanceListItem({ instance, onDelete }: InstanceListItemProps) 
         instanceId={instance.id}
         instanceName={instance.name}
         onClose={() => setShowFileBrowserModal(false)}
+      />
+
+      {/* Database GUI Modal */}
+      <DatabaseModal
+        isOpen={showDatabaseModal}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setShowDatabaseModal(false)}
+      />
+
+      {/* Port Forward Modal */}
+      <PortForwardModal
+        isOpen={showPortForwardModal}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setShowPortForwardModal(false)}
+      />
+
+      {/* Terminal Modal */}
+      <TerminalModal
+        isOpen={showTerminalModal}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setShowTerminalModal(false)}
       />
     </>
   );

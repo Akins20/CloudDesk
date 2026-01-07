@@ -206,4 +206,110 @@ router.post(
   instanceFeaturesController.createDirectory
 );
 
+// ============================================
+// Database GUI Routes
+// ============================================
+
+/**
+ * @route   POST /api/instances/:id/database/detect
+ * @desc    Detect available database clients on instance
+ * @access  Private
+ */
+router.post(
+  '/:id/database/detect',
+  validateParams(objectIdParamSchema),
+  instanceFeaturesController.detectDatabases
+);
+
+/**
+ * @route   POST /api/instances/:id/database/list
+ * @desc    List databases on instance
+ * @access  Private
+ */
+router.post(
+  '/:id/database/list',
+  validateParams(objectIdParamSchema),
+  instanceFeaturesController.listDatabases
+);
+
+/**
+ * @route   POST /api/instances/:id/database/tables
+ * @desc    List tables/collections in a database
+ * @access  Private
+ */
+router.post(
+  '/:id/database/tables',
+  validateParams(objectIdParamSchema),
+  instanceFeaturesController.listTables
+);
+
+/**
+ * @route   POST /api/instances/:id/database/schema
+ * @desc    Get table/collection schema
+ * @access  Private
+ */
+router.post(
+  '/:id/database/schema',
+  validateParams(objectIdParamSchema),
+  instanceFeaturesController.getTableSchema
+);
+
+/**
+ * @route   POST /api/instances/:id/database/query
+ * @desc    Execute database query
+ * @access  Private
+ */
+router.post(
+  '/:id/database/query',
+  validateParams(objectIdParamSchema),
+  instanceFeaturesController.executeQuery
+);
+
+// ============================================
+// Port Forwarding Routes
+// ============================================
+
+/**
+ * @route   POST /api/instances/:id/port-forward/create
+ * @desc    Create a port forward
+ * @access  Private
+ */
+router.post(
+  '/:id/port-forward/create',
+  validateParams(objectIdParamSchema),
+  instanceFeaturesController.createPortForward
+);
+
+/**
+ * @route   POST /api/instances/:id/port-forward/:forwardId/stop
+ * @desc    Stop a port forward
+ * @access  Private
+ */
+router.post(
+  '/:id/port-forward/:forwardId/stop',
+  instanceFeaturesController.stopPortForward
+);
+
+/**
+ * @route   GET /api/instances/:id/port-forward/list
+ * @desc    List active port forwards for an instance
+ * @access  Private
+ */
+router.get(
+  '/:id/port-forward/list',
+  validateParams(objectIdParamSchema),
+  instanceFeaturesController.listPortForwards
+);
+
+/**
+ * @route   GET /api/instances/:id/port-forward/available-port
+ * @desc    Get an available port for forwarding
+ * @access  Private
+ */
+router.get(
+  '/:id/port-forward/available-port',
+  validateParams(objectIdParamSchema),
+  instanceFeaturesController.getAvailablePort
+);
+
 export default router;
